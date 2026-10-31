@@ -1,0 +1,18 @@
+{
+  "version": "0.24.0",
+  "unit_tests": 119,
+  "passed": true,
+  "real_unreal_rpc": true,
+  "gui_tkinter_loaded": true,
+  "gui_unreal_loaded": false,
+  "unreal_tkinter_loaded": false,
+  "gui_exit_reconnect": true,
+  "job_survived_gui_exit": true,
+  "test_cleanup_deleted": 7,
+  "test_cleanup_retained": 0,
+  "seconds": 4.875,
+  "limits": [
+    "No live OpenAI request or manual IME/Alt-Tab soak",
+    "Custom RPC calls are synchronous; long operations can temporarily block external GUI"
+  ]
+}

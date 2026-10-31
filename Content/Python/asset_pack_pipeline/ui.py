@@ -18,6 +18,11 @@ def open_window():
     return unreal.AssetPackPipelineNative.open_window()
 
 
+def open_custom_window():
+    from . import custom_server
+    return custom_server.launch()
+
+
 def invoke(action):
     try:
         if action == 'readiness':
@@ -46,10 +51,14 @@ def register():
     parent = menus.extend_menu('LevelEditor.MainMenu.Tools')
     menu = parent.add_sub_menu(owner, 'AssetPackPipeline', 'AssetPackPipeline', 'Asset Pack Pipeline')
     entry = unreal.ToolMenuEntry(name='AssetPackPipeline.OpenWindow', type=unreal.MultiBlockType.MENU_ENTRY)
-    entry.set_label('Открыть окно Asset Pack Pipeline…')
+    entry.set_label('Открыть Unreal UI (Slate)…')
     entry.set_string_command(unreal.ToolMenuStringCommandType.PYTHON, '',
                              'from asset_pack_pipeline import ui; ui.open_window()')
     menu.add_menu_entry('Window', entry)
+    custom = unreal.ToolMenuEntry(name='AssetPackPipeline.CustomWindow',type=unreal.MultiBlockType.MENU_ENTRY)
+    custom.set_label('Открыть Custom UI (отдельное окно)…')
+    custom.set_string_command(unreal.ToolMenuStringCommandType.PYTHON,'','from asset_pack_pipeline import ui; ui.open_custom_window()')
+    menu.add_menu_entry('Window',custom)
     for action, label in [('readiness', 'Readiness'), ('plan', 'Scan and Plan'),
                           ('start', 'Run Import + Materials + LODs'),
                           ('status', 'Current Job Status'), ('cancel', 'Cancel at Next Asset'),

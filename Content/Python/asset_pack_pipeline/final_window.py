@@ -6,12 +6,15 @@ import uuid
 class FinalWindow:
     def scan_content(self):
         try:
-            import unreal as u
             from collections import Counter
             if self.api.readiness()['active_run']:
                 raise RuntimeError('Дождитесь завершения задачи.')
-            assets = u.EditorAssetLibrary.list_assets('/Game', recursive=True, include_folder=False)
-            counts = Counter('/'.join(str(path).split('.') [0].split('/')[:3]) for path in assets if len(str(path).split('/'))>3)
+            if getattr(self,'external',False):
+                counts=self.api.content_folders()
+            else:
+                import unreal as u
+                assets = u.EditorAssetLibrary.list_assets('/Game', recursive=True, include_folder=False)
+                counts = Counter('/'.join(str(path).split('.') [0].split('/')[:3]) for path in assets if len(str(path).split('/'))>3)
             dialog = self.tk.Toplevel(self.root)
             dialog.title('Content · Выберите папку для очистки')
             dialog.geometry('760x520')
@@ -115,7 +118,7 @@ class FinalWindow:
             pack = selected_pack or self.variables['pack_id'].get().strip()
             root = selected_root or (self.variables['destination_root'].get().strip().rstrip('/') if self.mode.get() == 'Профессиональный' else '/Game/'+pack)
             manifest = {'profile': {'pack_id':pack, 'destination_root':root}}
-            proposal = cleanup.plan(manifest, imported=True, folder_scope=folder_scope)
+            proposal = self.api.plan_imported_cleanup(manifest,folder_scope=folder_scope) if getattr(self,'external',False) else cleanup.plan(manifest, imported=True, folder_scope=folder_scope)
             dialog = self.tk.Toplevel(self.root)
             dialog.title('План очистки импортированного пака')
             dialog.geometry('900x580')
@@ -138,7 +141,7 @@ class FinalWindow:
                     folder = self.saved/'ImportedCleanup'/uuid.uuid4().hex
                     folder.mkdir(parents=True)
                     (folder/'plan.json').write_text(json.dumps(proposal, ensure_ascii=False, indent=2), encoding='utf-8')
-                    result = cleanup.execute(manifest, folder/'backup', imported=True, expected=proposal['delete_packages'], folder_scope=folder_scope)
+                    result = self.api.execute_imported_cleanup(manifest,str(folder/'backup'),expected=proposal['delete_packages'],folder_scope=folder_scope) if getattr(self,'external',False) else cleanup.execute(manifest, folder/'backup', imported=True, expected=proposal['delete_packages'], folder_scope=folder_scope)
                     (folder/'result.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
                     self._log('Очистка импортированного пака: '+str(folder))
                     self.state_label.configure(text=f"Удалено: {result['deleted_count']}; сохранено: {result['retained_count']}")

@@ -10,6 +10,13 @@ class AssetPackTools(unreal.ToolsetDefinition):
 
     @toolset_registry.tool_call
     @staticmethod
+    def open_custom_window() -> str:
+        """Launch or focus the isolated Custom UI; Unreal retains ownership of jobs."""
+        from . import ui
+        return json.dumps(ui.open_custom_window())
+
+    @toolset_registry.tool_call
+    @staticmethod
     def create_combined_delivery(profile_paths: str) -> str:
         """Create one content project from a JSON array of LOD/Nanite profile paths with a shared pack root."""
         return json.dumps(api.create_combined_delivery(json.loads(profile_paths)))
@@ -18,9 +25,9 @@ class AssetPackTools(unreal.ToolsetDefinition):
     @staticmethod
     def open_window() -> str:
         """Show or focus the modeless Asset Pack Pipeline settings window."""
-        from .window import open_window
-        window = open_window()
-        return json.dumps({'open': not window.closed})
+        from . import ui
+        ui.open_window()
+        return json.dumps({'open':True,'ui':'native'})
 
     @toolset_registry.tool_call
     @staticmethod

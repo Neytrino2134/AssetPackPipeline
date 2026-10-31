@@ -15,7 +15,10 @@ output = project / 'Releases' / f'AssetPackPipeline-{version}.zip'
 output.parent.mkdir(exist_ok=True)
 with ZipFile(output, 'w', ZIP_DEFLATED) as archive:
     for path in sorted(plugin.rglob('*')):
-        if path.is_file() and path.suffix.lower() != '.pdb' and not any(part in ('.git', '__pycache__', 'Intermediate') for part in path.parts):
+        if (path.is_file() and path.suffix.lower() != '.pdb'
+                and not path.name.startswith('.env')
+                and path.name not in ('ai-settings.json','active_profile.json')
+                and not any(part in ('.git','__pycache__','Intermediate','Saved','DerivedDataCache','Releases','.vs') for part in path.relative_to(plugin).parts)):
             if args.binary_source and 'Binaries' in path.relative_to(plugin).parts:
                 continue
             archive.write(path, path.relative_to(plugin.parent))

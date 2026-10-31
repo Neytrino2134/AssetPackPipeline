@@ -119,7 +119,7 @@ from .guided_window import GuidedWindow
 
 
 class PipelineWindow(GuidedWindow):
-    def __init__(self, parent_to_unreal=True, pump=True):
+    def __init__(self, parent_to_unreal=True, pump=True, api_adapter=None, saved_directory=None):
         # Tk's default location derives from the interpreter executable. In an
         # embedded Unreal runtime use its bundled Tcl/Tk installation instead.
         for env, directory in [('TCL_LIBRARY', 'tcl8.6'), ('TK_LIBRARY', 'tk8.6')]:
@@ -129,7 +129,8 @@ class PipelineWindow(GuidedWindow):
         import tkinter as tk
         from tkinter import ttk
         from . import api, __version__
-        self.tk, self.ttk, self.api = tk, ttk, api
+        self.external = api_adapter is not None
+        self.tk, self.ttk, self.api = tk, ttk, api_adapter if self.external else api
         self.root = tk.Tk(className='AssetPackPipeline')
         self.root.title(f'Asset Pack Pipeline {__version__}')
         self.root.geometry('1200x860')
@@ -158,8 +159,11 @@ class PipelineWindow(GuidedWindow):
         self._build()
         self.root.protocol('WM_DELETE_WINDOW', self.close)
         self.root.report_callback_exception = self._callback_error
-        import unreal
-        self.saved = Path(unreal.Paths.project_saved_dir()).resolve() / 'AssetPackPipeline'
+        if self.external:
+            self.saved=Path(saved_directory).resolve()
+        else:
+            import unreal
+            self.saved = Path(unreal.Paths.project_saved_dir()).resolve() / 'AssetPackPipeline'
         active = self.saved / 'active_profile.json'
         template = Path(__file__).resolve().parents[2] / 'Profiles' / 'profile.example.json'
         self.load_profile(active if active.is_file() else template)
@@ -588,8 +592,11 @@ class PipelineWindow(GuidedWindow):
         self._log('Ошибка: ' + str(value))
         self.state_label.configure(text='Ошибка — подробности в журнале')
         self.tabs.select(self.results_tab)
-        import unreal
-        unreal.log_error(f'AssetPackPipeline UI: {value}')
+        if self.external:
+            print(f'AssetPackPipeline Custom UI: {value}',file=sys.stderr)
+        else:
+            import unreal
+            unreal.log_error(f'AssetPackPipeline UI: {value}')
 
     def load_profile(self, path):
         from .discovery import read_json

@@ -1,0 +1,154 @@
+{
+  "passed": true,
+  "first": {
+    "pid": 35596,
+    "log": "D:\\Documents\\Unreal Projects\\MCP_Setup_Projects\\Saved\\NativePackage020\\HostProject\\Saved\\AssetPackPipeline\\CustomIPC\\custom-ui.log"
+  },
+  "isolated": {
+    "pid": 35596,
+    "tkinter_loaded": true,
+    "unreal_loaded": false,
+    "rpc_connected": true,
+    "probe_started": true,
+    "widget_seconds": 0.2180000000007567,
+    "elapsed_seconds": 1.875,
+    "heartbeat_samples": 54,
+    "heartbeat_p95_seconds": 0.0319999999992433,
+    "heartbeat_max_after_start_seconds": 0.0319999999992433,
+    "rpc_seconds": 0.01599999999598367,
+    "rpc_requests": 1
+  },
+  "second": {
+    "pid": 19764,
+    "log": "D:\\Documents\\Unreal Projects\\MCP_Setup_Projects\\Saved\\NativePackage020\\HostProject\\Saved\\AssetPackPipeline\\CustomIPC\\custom-ui.log"
+  },
+  "editor_delay_seconds": 2,
+  "reconnected": {
+    "pid": 19764,
+    "tkinter_loaded": true,
+    "unreal_loaded": false,
+    "rpc_connected": true,
+    "probe_started": false,
+    "widget_seconds": 0.2180000000007567,
+    "elapsed_seconds": 4.905999999995402,
+    "heartbeat_samples": 152,
+    "heartbeat_p95_seconds": 0.0319999999992433,
+    "heartbeat_max_after_start_seconds": 0.046999999998661224,
+    "rpc_seconds": 0.014999999999417923,
+    "rpc_requests": 3
+  },
+  "unreal_tkinter_loaded": false,
+  "cleanup": {
+    "assets": [
+      {
+        "id": "/Game/CustomRegression_ca37af75/Materials/Instances/MI_Containers_01_02",
+        "path": "/Game/CustomRegression_ca37af75/Materials/Instances/MI_Containers_01_02.MI_Containers_01_02",
+        "owned": true,
+        "supported": true,
+        "staging_run": "",
+        "referencers": [
+          "/Game/CustomRegression_ca37af75/StaticMeshes/LOD/SM_Containers_01_02_LODS",
+          "/Game/CustomRegression_ca37af75/StaticMeshes/Nanite/SM_Containers_01_02_MID"
+        ],
+        "can_delete": true,
+        "reason": "owned_and_unreferenced",
+        "status": "deleted"
+      },
+      {
+        "id": "/Game/CustomRegression_ca37af75/Materials/Master/M_CustomRegression_ca37af75_Master",
+        "path": "/Game/CustomRegression_ca37af75/Materials/Master/M_CustomRegression_ca37af75_Master.M_CustomRegression_ca37af75_Master",
+        "owned": true,
+        "supported": true,
+        "staging_run": "",
+        "referencers": [
+          "/Game/CustomRegression_ca37af75/Materials/Instances/MI_Containers_01_02"
+        ],
+        "can_delete": true,
+        "reason": "owned_and_unreferenced",
+        "status": "deleted"
+      },
+      {
+        "id": "/Game/CustomRegression_ca37af75/StaticMeshes/LOD/SM_Containers_01_02_LODS",
+        "path": "/Game/CustomRegression_ca37af75/StaticMeshes/LOD/SM_Containers_01_02_LODS.SM_Containers_01_02_LODS",
+        "owned": true,
+        "supported": true,
+        "staging_run": "",
+        "referencers": [],
+        "can_delete": true,
+        "reason": "owned_and_unreferenced",
+        "status": "deleted"
+      },
+      {
+        "id": "/Game/CustomRegression_ca37af75/StaticMeshes/Nanite/SM_Containers_01_02_MID",
+        "path": "/Game/CustomRegression_ca37af75/StaticMeshes/Nanite/SM_Containers_01_02_MID.SM_Containers_01_02_MID",
+        "owned": true,
+        "supported": true,
+        "staging_run": "",
+        "referencers": [],
+        "can_delete": true,
+        "reason": "owned_and_unreferenced",
+        "status": "deleted"
+      },
+      {
+        "id": "/Game/CustomRegression_ca37af75/Textures/T_Containers_01_02_BaseColor",
+        "path": "/Game/CustomRegression_ca37af75/Textures/T_Containers_01_02_BaseColor.T_Containers_01_02_BaseColor",
+        "owned": true,
+        "supported": true,
+        "staging_run": "",
+        "referencers": [
+          "/Game/CustomRegression_ca37af75/Materials/Instances/MI_Containers_01_02",
+          "/Game/CustomRegression_ca37af75/Materials/Master/M_CustomRegression_ca37af75_Master"
+        ],
+        "can_delete": true,
+        "reason": "owned_and_unreferenced",
+        "status": "deleted"
+      },
+      {
+        "id": "/Game/CustomRegression_ca37af75/Textures/T_Containers_01_02_Normal",
+        "path": "/Game/CustomRegression_ca37af75/Textures/T_Containers_01_02_Normal.T_Containers_01_02_Normal",
+        "owned": true,
+        "supported": true,
+        "staging_run": "",
+        "referencers": [
+          "/Game/CustomRegression_ca37af75/Materials/Instances/MI_Containers_01_02",
+          "/Game/CustomRegression_ca37af75/Materials/Master/M_CustomRegression_ca37af75_Master"
+        ],
+        "can_delete": true,
+        "reason": "owned_and_unreferenced",
+        "status": "deleted"
+      },
+      {
+        "id": "/Game/CustomRegression_ca37af75/Textures/T_CustomRegression_ca37af75_ORM_Default",
+        "path": "/Game/CustomRegression_ca37af75/Textures/T_CustomRegression_ca37af75_ORM_Default.T_CustomRegression_ca37af75_ORM_Default",
+        "owned": true,
+        "supported": true,
+        "staging_run": "",
+        "referencers": [
+          "/Game/CustomRegression_ca37af75/Materials/Instances/MI_Containers_01_02",
+          "/Game/CustomRegression_ca37af75/Materials/Master/M_CustomRegression_ca37af75_Master"
+        ],
+        "can_delete": true,
+        "reason": "owned_and_unreferenced",
+        "status": "deleted"
+      }
+    ],
+    "delete_packages": [
+      "/Game/CustomRegression_ca37af75/Materials/Instances/MI_Containers_01_02",
+      "/Game/CustomRegression_ca37af75/Materials/Master/M_CustomRegression_ca37af75_Master",
+      "/Game/CustomRegression_ca37af75/StaticMeshes/LOD/SM_Containers_01_02_LODS",
+      "/Game/CustomRegression_ca37af75/StaticMeshes/Nanite/SM_Containers_01_02_MID",
+      "/Game/CustomRegression_ca37af75/Textures/T_Containers_01_02_BaseColor",
+      "/Game/CustomRegression_ca37af75/Textures/T_Containers_01_02_Normal",
+      "/Game/CustomRegression_ca37af75/Textures/T_CustomRegression_ca37af75_ORM_Default"
+    ],
+    "delete_count": 7,
+    "retained_count": 0,
+    "publication_ready": false,
+    "passed": true,
+    "deleted_count": 7,
+    "backup_folder": "D:\\Documents\\Unreal Projects\\MCP_Setup_Projects\\Saved\\NativePackage020\\HostProject\\Saved\\AssetPackPipeline\\CustomSmokeBackup\\CustomRegression_ca37af75",
+    "remaining_requested": []
+  },
+  "job_survived_gui_exit": true,
+  "seconds": 8.906000000002678
+}

@@ -14,7 +14,7 @@ METHODS=frozenset(('readiness','plan','start','status','list_runs','resume','can
  'create_overview','open_overview','validate_overview','start_previews','start_media','start_flythrough',
  'open_flythrough','plan_cleanup','cleanup_staging','plan_delivery','create_delivery','create_combined_delivery',
  'start_delivery_verification','package_delivery','start_cook'))
-READ_ONLY=frozenset(('readiness','status','list_runs','guided_status','content_folders'))
+READ_ONLY=frozenset(('readiness','status','list_runs','guided_status','content_folders','ui_snapshot'))
 _handle=None
 _token=''
 _session=''
@@ -33,9 +33,16 @@ def active_guided():
     return native_bridge._session if native_bridge._session and not native_bridge._session.done else None
 
 def dispatch(method,args,kwargs):
-    if method not in METHODS and method not in ('guided_status','cancel_guided','start_guided','content_folders','plan_imported_cleanup','execute_imported_cleanup'):
+    if method not in METHODS and method not in ('ui_snapshot','guided_status','cancel_guided','start_guided','content_folders','plan_imported_cleanup','execute_imported_cleanup'):
         raise ValueError('RPC command not permitted')
     from . import native_bridge
+    if method=='ui_snapshot':
+        ready=api.readiness()
+        job=native_bridge._session
+        ready.update(custom_focus=_focus,guided_running=bool(active_guided()))
+        run=ready['active_run'] or (args[0] if args else None)
+        report=api.status(run) if run else None
+        return {'ready':ready,'guided':{'stage':job.label,'done':job.done,'error':job.error,'result':job.result} if job else None,'report':report}
     if method not in READ_ONLY and method not in ('cancel_guided','cancel') and active_guided():
         raise RuntimeError('Уже выполняется последовательность подготовки. Дождитесь её завершения.')
     if method=='readiness':

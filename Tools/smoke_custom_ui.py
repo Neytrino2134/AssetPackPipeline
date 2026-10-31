@@ -22,6 +22,14 @@ for name,p in profiles.items():
     path=out.parent/(pack+'_'+name+'.json');path.write_text(json.dumps(p),encoding='utf-8');paths[name]=str(path)
 steps=[(name,'import') for name in paths]+[(name,'validate') for name in paths]
 started=time.monotonic();phase=0;busy=False
+dispatch=server.dispatch
+def delayed_dispatch(method,args,kwargs):
+    # Simulate a busy/background editor, without any production test hook.
+    if phase==3 and method=='ui_snapshot' and not result.get('editor_delay_seconds'):
+        result['editor_delay_seconds']=2
+        time.sleep(2)
+    return dispatch(method,args,kwargs)
+server.dispatch=delayed_dispatch
 def tick(delta):
     global phase,busy,started
     if busy:return
@@ -36,6 +44,8 @@ def tick(delta):
             assert status['pid']==server._process.pid
             assert status['tkinter_loaded'] and not status['unreal_loaded'] and status.get('rpc_connected')
             assert status['probe_started']
+            if status['heartbeat_samples']<50:return
+            assert status['heartbeat_p95_seconds']<.1,status
             result['isolated']=status
             assert server.launch()['already_open']
             # Simulate only our test Custom UI process failing; Unreal must survive.
@@ -45,6 +55,10 @@ def tick(delta):
             result['second']=server.launch();phase=3
         elif phase==3 and marker.is_file():
             status=json.loads(marker.read_text())
+            if status['heartbeat_samples']<150 or status['rpc_requests']<2:return
+            assert status['heartbeat_p95_seconds']<.1,status
+            assert status['heartbeat_max_after_start_seconds']<.25,status
+            assert result.get('editor_delay_seconds')==2
             assert status['pid']==server._process.pid and status['pid']!=result['first']['pid']
             result.update(reconnected=status,unreal_tkinter_loaded='tkinter' in sys.modules)
             server._process.terminate();server._process.wait(timeout=5)
@@ -63,6 +77,7 @@ def tick(delta):
         result['error']=str(error);finish()
     finally:busy=False
 def finish():
+    server.dispatch=dispatch
     u.unregister_slate_post_tick_callback(handle)
     out.write_text(json.dumps(result,indent=2),encoding='utf-8')
     u.SystemLibrary.quit_editor()

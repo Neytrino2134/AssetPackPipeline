@@ -968,6 +968,10 @@ class PipelineWindow(GuidedWindow):
         if not active and self.run_id == getattr(self, '_logged_run', None):
             return
         report = self.api.status(self.run_id)
+        self._display_report(report)
+
+    def _display_report(self, report):
+        """Apply an already fetched report; safe for a cached external snapshot."""
         assets = report['assets']
         finished = sum(a['status'] in ('passed', 'failed', 'cancelled', 'skipped') for a in assets)
         self.progress['value'] = 100 * finished / max(1, len(assets))

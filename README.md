@@ -1,4 +1,8 @@
-# Asset Pack Pipeline 0.15.0
+# Asset Pack Pipeline 0.24.1
+
+Custom UI performance: background status snapshots keep startup and idle interaction
+independent of Unreal response time. See [performance verification](Docs/CustomUIPerformance0241.md)
+and [dual UI usage](Docs/CustomUI024.md). Restart Unreal after updating Python modules.
 
 ## Continuous camera flythrough (0.15)
 

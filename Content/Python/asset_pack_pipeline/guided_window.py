@@ -30,8 +30,12 @@ class GuidedWindow(AssistantWindow, FinalWindow):
         self.guide_finalize = tk.BooleanVar(value=True)
         self.guide_renders = {name: tk.BooleanVar(value=name == 'overview')
                               for name in ('overview', 'MID', 'LOW', 'LODS', 'selected')}
+        # Quick start: 1 and 2 stacked left, 3 on the right, 4 full width below.
+        self.guide_grid = t.Frame(body)
+        self.guide_grid.pack(fill='x')
+        self.guide_grid.columnconfigure((0, 1), weight=1, uniform='guide')
         for title in ('1. Исходники', '2. Меши', '3. Изображения', '4. Итоговая поставка'):
-            group = t.LabelFrame(body, text=title, padding=14)
+            group = t.LabelFrame(self.guide_grid, text=title, padding=14)
             self.guide_groups.append(group)
         source, meshes, renders, review = self.guide_groups
         for row, (label, key) in enumerate((('Папка с FBX / GLB', 'source_root'), ('Название пака', 'pack_id'))):
@@ -92,10 +96,15 @@ class GuidedWindow(AssistantWindow, FinalWindow):
         self.guide_title.configure(text=(f'Шаг {self.guide_step+1} из 4 · '+titles[self.guide_step]) if wizard else 'Подготовка пака')
         self.guide_hint.configure(text='Все модели из папки. Материалы и LOD настраиваются скриптами. MID, иначе HIGH — источник Nanite. '
                                   'Геометрические замечания сохраняются в отчёте; модели не исключаются.')
+        quick = ((0, 0, 1, 1), (1, 0, 1, 1), (0, 1, 2, 1), (2, 0, 1, 2))  # row, column, rowspan, columnspan
         for i, group in enumerate(self.guide_groups):
-            group.pack_forget()
-            if not wizard or wizard and i == self.guide_step:
-                group.pack(fill='x', pady=(0, 10))
+            group.grid_forget()
+            if wizard and i == self.guide_step:
+                group.grid(row=0, column=0, columnspan=2, sticky='nsew', pady=(0, 10))
+            elif not wizard:
+                row, column, rowspan, columnspan = quick[i]
+                group.grid(row=row, column=column, rowspan=rowspan, columnspan=columnspan, sticky='nsew',
+                           padx=(0, 10) if column == 0 and columnspan == 1 else 0, pady=(0, 10))
         if wizard:
             self.guide_nav.pack(side='bottom', fill='x', pady=10)
         else:

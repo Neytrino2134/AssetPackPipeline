@@ -157,6 +157,7 @@ class PipelineWindow(GuidedWindow):
         self.session_path = None
         self._style()
         self._build()
+        self.root.bind_all('<Control-KeyPress>', self._layout_shortcut, add='+')
         self.root.protocol('WM_DELETE_WINDOW', self.close)
         self.root.report_callback_exception = self._callback_error
         if self.external:
@@ -181,6 +182,20 @@ class PipelineWindow(GuidedWindow):
             unreal.parent_external_window_to_slate(int(self.root.wm_frame(), 0))
         if pump:
             self.tick_handle = unreal.register_slate_post_tick_callback(self._tick)
+
+    # Windows virtual-key codes -> Tk virtual events. Tk matches <Control-a> by
+    # keysym, which is Cyrillic in the Russian layout, so Ctrl+A/C/V/X/Z/Y did nothing.
+    _SHORTCUTS = {65: '<<SelectAll>>', 67: '<<Copy>>', 86: '<<Paste>>', 88: '<<Cut>>', 90: '<<Undo>>', 89: '<<Redo>>'}
+
+    def _layout_shortcut(self, event):
+        virtual = self._SHORTCUTS.get(event.keycode)
+        if not virtual or (len(event.keysym) == 1 and event.keysym.isascii()):
+            return None  # Latin layout: Tk's own bindings already handle it.
+        if virtual == '<<SelectAll>>' and isinstance(event.widget, self.tk.Text):
+            event.widget.tag_add('sel', '1.0', 'end-1c')
+        else:
+            event.widget.event_generate(virtual)
+        return 'break'
 
     def _style(self):
         s = self.ttk.Style(self.root)
@@ -272,9 +287,11 @@ class PipelineWindow(GuidedWindow):
         t = self.ttk
         shell = t.Frame(self.root, style='Shell.TFrame', padding=18)
         shell.pack(fill='both', expand=True)
-        t.Label(shell, text='Asset Pack Pipeline', style='Hero.TLabel').pack(anchor='w')
-        t.Label(shell, text='FBX / GLB   →   Static Mesh + LOD   →   Материалы   →   Проверка',
-                style='Subtitle.TLabel').pack(anchor='w', pady=(2, 14))
+        # The custom title bar (custom_host) already carries brand and steps.
+        if not hasattr(self, 'chrome'):
+            from .custom_chrome import TITLE, SUBTITLE
+            t.Label(shell, text=TITLE, style='Hero.TLabel').pack(anchor='w')
+            t.Label(shell, text=SUBTITLE, style='Subtitle.TLabel').pack(anchor='w', pady=(2, 14))
         bar = t.Frame(shell, padding=9)
         bar.pack(fill='x', pady=(0, 10))
         self.profile_label = t.Label(bar, text='Профиль', style='Muted.TLabel')

@@ -113,11 +113,13 @@ def collision_audit(camera,actor,floor,expected=True):
 def advance(report,state):
     import unreal as u
     from . import overview
+    from . import render_quality
     row=next((a for a in report['assets'] if a['status'] in ('pending','running')),None)
-    if row is None:return True
+    if row is None:render_quality.restore();return True
     if report['cancel_requested'] and 'task' not in state:
         for item in report['assets']:
             if item['status'] in ('pending','running'):item['status']='cancelled'
+        render_quality.restore()
         return True
     config=report['media_settings'];capture=report['preview_settings'];now=time.monotonic()
     if row['status']=='pending':
@@ -176,6 +178,8 @@ def advance(report,state):
         actors['Exposure'].set_editor_property('settings',post)
         if not u.get_editor_subsystem(u.LevelEditorSubsystem).save_current_level():raise RuntimeError('Could not save studio')
         u.get_editor_subsystem(u.LevelEditorSubsystem).pilot_level_actor(camera)
+        render_quality.apply()
+        render_quality.prestream([mesh],capture['warmup_seconds'])
         row.update(status='running',camera=framing,source_asset_valid=check.get('strict_passed',check['passed']),
                    diagnostic=not check.get('strict_passed',check['passed']),warnings=check.get('warnings',[]),
                    representation='Nanite' if check['nanite'] else 'LOD',
@@ -205,7 +209,9 @@ def advance(report,state):
         if not task or not task.is_valid_task():raise RuntimeError('Unreal rejected media screenshot')
         state['task']=task
         return False
-    if not state['task'].is_task_done():return False
+    if not state['task'].is_task_done():
+        if now-state['started']>capture['timeout_seconds']+previews.STALL_GRACE_SECONDS:raise RuntimeError(previews.STALL_MESSAGE)
+        return False
     state.pop('task')
     if state.get('timed_out') or overview._current()[1]!=row['map_path']:raise RuntimeError('Media capture timed out or map changed')
     row.update(previews.inspect_png(row['output_path'],capture['width'],capture['height']),status='passed')

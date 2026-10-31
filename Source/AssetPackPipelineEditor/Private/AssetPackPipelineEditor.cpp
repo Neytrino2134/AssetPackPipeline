@@ -4,6 +4,8 @@
 #include "Widgets/Docking/SDockTab.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SBorder.h"
+#include "Widgets/SBoxPanel.h"
 #include "Widgets/Input/SEditableTextBox.h"
 #include "Widgets/Input/SMultiLineEditableTextBox.h"
 #include "Widgets/Input/SButton.h"
@@ -94,6 +96,46 @@ public:
             .OnCheckStateChanged_Lambda([Ptr](ECheckBoxState V){*Ptr=V==ECheckBoxState::Checked;})
             [SNew(STextBlock).Text(FText::FromString(Label))]];
     }
+    bool IsPro() const {return Mode==TEXT("Профессиональный");}
+    bool IsWizard() const {return Mode==TEXT("Мастер");}
+    bool IsQuick() const {return !IsPro() && !IsWizard();}
+    static EVisibility Visible(bool bShown){return bShown ? EVisibility::Visible : EVisibility::Collapsed;}
+    const TCHAR* StageTitles[4]={TEXT("Источники и импорт"),TEXT("Меши, LOD и Nanite"),TEXT("Рендер и предметные кадры"),TEXT("Поставка")};
+    TSharedPtr<SVerticalBox> MainBox;
+    TArray<bool> SectionOpen;
+    TArray<TSharedPtr<SVerticalBox>> OnlyStack;
+    /** Starts a stage group on the main column and redirects Form into its body.
+     *  WizardStep>=0: shared stage (Quick: always, Master: on its step, Professional: collapsible).
+     *  WizardStep<0: Professional-only collapsible group unless Shown overrides it. */
+    void Section(const TCHAR* Title, int32 WizardStep, bool bOpen, TFunction<bool()> Shown=nullptr)
+    {
+        const int32 Index=SectionOpen.Add(bOpen);
+        const FString Name(Title);
+        TSharedPtr<SVerticalBox> Body;
+        MainBox->AddSlot().AutoHeight().Padding(0,4)[SNew(SBox).Visibility_Lambda([this,WizardStep,Shown](){
+                return Visible(Shown ? Shown() : WizardStep<0 ? IsPro() : IsPro() || IsQuick() || Step==WizardStep);})
+            [SNew(SVerticalBox)
+            +SVerticalBox::Slot().AutoHeight()[SNew(SButton).ButtonStyle(FAppStyle::Get(),"SimpleButton")
+                .Visibility_Lambda([this](){return Visible(IsPro());})
+                .OnClicked_Lambda([this,Index](){SectionOpen[Index]=!SectionOpen[Index];return FReply::Handled();})
+                [SNew(STextBlock).Font(FAppStyle::GetFontStyle("BoldFont")).Text_Lambda([this,Index,Name](){
+                    return FText::FromString((SectionOpen[Index] ? TEXT("▼  ") : TEXT("▶  "))+Name);})]]
+            +SVerticalBox::Slot().AutoHeight().Padding(0,8,0,2)[SNew(STextBlock).Font(FAppStyle::GetFontStyle("BoldFont"))
+                .Visibility_Lambda([this](){return Visible(!IsPro());}).Text(FText::FromString(Name))]
+            +SVerticalBox::Slot().AutoHeight()[SNew(SBorder).BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder")).Padding(FMargin(12,6))
+                .Visibility_Lambda([this,Index](){return Visible(!IsPro() || SectionOpen[Index]);})
+                [SAssignNew(Body,SVerticalBox)]]]];
+        Form=Body;
+    }
+    /** Nested block inside the current group that is shown only while Predicate holds. */
+    void Only(TFunction<bool()> Predicate)
+    {
+        TSharedPtr<SVerticalBox> Body;
+        Form->AddSlot().AutoHeight()[SNew(SBox).Visibility_Lambda([Predicate](){return Visible(Predicate());})[SAssignNew(Body,SVerticalBox)]];
+        OnlyStack.Push(Form); Form=Body;
+    }
+    void EndOnly(){Form=OnlyStack.Pop();}
+    void ProField(const TCHAR* Id, const TCHAR* Label, const TCHAR* Default){Field(Label,ProfessionalFields.FindOrAdd(Id),Default);}
     FReply Browse(TSharedPtr<SEditableTextBox> Target)
     {
         FString Selected;
@@ -224,59 +266,63 @@ public:
                 SavedSettings->TryGetStringField(TEXT("model"),Model);
         }
         ChildSlot[SNew(SScrollBox)+SScrollBox::Slot().Padding(20)[SAssignNew(Form,SVerticalBox)]];
-        Form->AddSlot().AutoHeight().Padding(0,10)[SNew(STextBlock).Text(FText::FromString(TEXT("Asset Pack Pipeline | Native Slate"))).Font(FAppStyle::GetFontStyle("HeadingExtraSmall"))];
-        Form->AddSlot().AutoHeight()[SNew(STextBlock).AutoWrapText(true).Text(FText::FromString(TEXT("Быстрый старт: исходники → меши → общий кадр → проверенный ZIP. Tkinter не используется.")))];
+        TSharedPtr<SVerticalBox> Main=Form;
+        MainBox=Main;
+        Form->AddSlot().AutoHeight().Padding(0,10)[SNew(STextBlock).Text(FText::FromString(TEXT("MESHFLOW Asset Pack Pipeline"))).Font(FAppStyle::GetFontStyle("HeadingExtraSmall"))];
         for(const TCHAR* Name:{TEXT("Быстрый старт"),TEXT("Мастер"),TEXT("Профессиональный")}) Modes.Add(MakeShared<FString>(Name));
         for(const TCHAR* Name:{TEXT("FBX"),TEXT("GLB")}) Formats.Add(MakeShared<FString>(Name));
         for(const TCHAR* Name:{TEXT("gpt-6.1-sol"),TEXT("gpt-6-astra"),TEXT("gpt-6.1-terra"),TEXT("gpt-6-luna")}) Models.Add(MakeShared<FString>(Name));
         Form->AddSlot().AutoHeight().Padding(0,8)[Combo(Modes,Mode)];
-        Button(TEXT("Мастер: назад"),[this](){Step=FMath::Max(0,Step-1);return FReply::Handled();});
-        Button(TEXT("Мастер: далее"),[this](){Step=FMath::Min(3,Step+1);return FReply::Handled();});
-        TSharedPtr<SVerticalBox> Main=Form;
-        auto Group=[this,Main](int32 Index){
-            TSharedPtr<SVerticalBox> Body;
-            Main->AddSlot().AutoHeight()[SNew(SBox).Visibility_Lambda([this,Index](){return Mode!=TEXT("Мастер") || Step==Index ? EVisibility::Visible:EVisibility::Collapsed;})[SAssignNew(Body,SVerticalBox)]];
-            Form=Body;
-        };
-        Group(0);
-        Field(TEXT("1. Папка исходников"),Source,TEXT(""));
+        Form->AddSlot().AutoHeight().Padding(0,0,0,8)[SNew(STextBlock).AutoWrapText(true).ColorAndOpacity(FSlateColor::UseSubduedForeground()).Text_Lambda([this](){
+            if(IsPro()) return FText::FromString(TEXT("Профессиональный: все параметры по этапам и служебные инструменты. Разверните нужную группу."));
+            if(IsWizard()) return FText::FromString(FString::Printf(TEXT("Мастер · шаг %d из 4 — %s. Помощник OpenAI доступен ниже."),Step+1,StageTitles[Step]));
+            return FText::FromString(TEXT("Быстрый старт: исходники → меши → общий кадр → проверенный ZIP."));})];
+
+        // Shared stages: Quick shows all, Master shows one step at a time,
+        // Professional wraps each in a collapsible group with extra fields.
+        Section(TEXT("Источники и импорт"),0,true);
+        Field(TEXT("Папка исходников"),Source,TEXT(""));
         Button(TEXT("Выбрать исходники…"),[this](){return Browse(Source);});
         Field(TEXT("Имя пака (латиница)"),Pack,TEXT("MyAssetPack"));
         Form->AddSlot().AutoHeight().Padding(0,8)[Combo(Formats,FormatValue)];
-        Group(1);
-        Check(TEXT("2. LOW / LOD"),bLOD); Check(TEXT("MID / Nanite"),bMID);
-        Group(2);
-        Check(TEXT("3. Один общий кадр"),bRender);
-        Check(TEXT("Каждый MID"),bRenderMID); Check(TEXT("Каждый LOW / LOD0"),bRenderLOW);
-        Check(TEXT("Каждый LOD"),bRenderLODS); Check(TEXT("Один выбранный LOD каждой модели"),bRenderSelected);
-        Field(TEXT("Номер выбранного LOD (0–4)"),SelectedLOD,TEXT("0"));
-        Group(3);
-        Check(TEXT("4. Чистый проект + проверка + ZIP"),bZip);
-        Field(TEXT("Каталог вывода (пусто — Saved)"),Output,TEXT(""));
-        Button(TEXT("Выбрать каталог вывода…"),[this](){return Browse(Output);});
-        Form=Main;
-        Button(TEXT("Проверить исходники"),[this](){return Send(TEXT("plan"));});
-        Button(TEXT("Запустить подготовку"),[this](){return Send(TEXT("start"));});
-        Button(TEXT("Остановить"),[this](){return Send(TEXT("cancel"));});
-        TSharedPtr<SVerticalBox> Pro;
-        Form->AddSlot().AutoHeight()[SNew(SBox).Visibility_Lambda([this](){return Mode==TEXT("Профессиональный")?EVisibility::Visible:EVisibility::Collapsed;})[SAssignNew(Pro,SVerticalBox)]];
-        Form=Pro;
-        auto ProField=[this](const TCHAR* Id,const TCHAR* Label,const TCHAR* Default){Field(Label,ProfessionalFields.FindOrAdd(Id),Default);};
+        Only([this](){return IsPro();});
         ProField(TEXT("destination_root"),TEXT("Назначение в Content"),TEXT("/Game/MyAssetPack"));
         ProField(TEXT("asset_ids"),TEXT("ID моделей через запятую (пусто — все)"),TEXT(""));
         ProField(TEXT("mesh_info"),TEXT("Файл каталога моделей"),TEXT("MeshInfo.json"));
         ProField(TEXT("texture_directory"),TEXT("Папка текстур относительно исходников"),TEXT("FBX/Textures"));
+        EndOnly();
+        Only([this](){return !IsWizard() || Step==0;});
+        Button(TEXT("Проверить исходники"),[this](){return Send(TEXT("plan"));});
+        EndOnly();
+
+        Section(TEXT("Меши, LOD и Nanite"),1,true);
+        Check(TEXT("LOW / LOD"),bLOD); Check(TEXT("MID / Nanite"),bMID);
+        Only([this](){return IsPro();});
         ProField(TEXT("lod_screen_sizes"),TEXT("Screen sizes LOD"),TEXT("1, 0.5, 0.25, 0.125, 0.0625"));
         ProField(TEXT("nanite_source"),TEXT("Источник Nanite: AUTO / MID / HIGH"),TEXT("AUTO"));
         ProField(TEXT("collision"),TEXT("Коллизия: none / box"),TEXT("box"));
-        ProField(TEXT("roughness"),TEXT("Материал · Roughness"),TEXT("0.85"));
-        ProField(TEXT("metallic"),TEXT("Материал · Metallic"),TEXT("0"));
-        ProField(TEXT("normal_strength"),TEXT("Материал · Normal strength"),TEXT("1"));
-        ProField(TEXT("uv_scale"),TEXT("Материал · UV scale"),TEXT("1"));
-        ProField(TEXT("orm_texture"),TEXT("Материал · ORM текстура (необязательно)"),TEXT(""));
-        ProField(TEXT("overview_columns"),TEXT("Обзор · столбцов"),TEXT("4"));
-        ProField(TEXT("overview_spacing"),TEXT("Обзор · расстояние, см"),TEXT("100"));
-        ProField(TEXT("overview_label_size"),TEXT("Обзор · размер подписей"),TEXT("5"));
+        EndOnly();
+
+        Section(TEXT("Материалы"),-1,false);
+        ProField(TEXT("roughness"),TEXT("Roughness"),TEXT("0.85"));
+        ProField(TEXT("metallic"),TEXT("Metallic"),TEXT("0"));
+        ProField(TEXT("normal_strength"),TEXT("Normal strength"),TEXT("1"));
+        ProField(TEXT("uv_scale"),TEXT("UV scale"),TEXT("1"));
+        ProField(TEXT("orm_texture"),TEXT("ORM текстура (необязательно)"),TEXT(""));
+
+        Section(TEXT("Обзорная сцена"),-1,false);
+        ProField(TEXT("overview_columns"),TEXT("Столбцов"),TEXT("4"));
+        ProField(TEXT("overview_spacing"),TEXT("Расстояние, см"),TEXT("100"));
+        ProField(TEXT("overview_label_size"),TEXT("Размер подписей"),TEXT("5"));
+
+        Section(TEXT("Рендер и предметные кадры"),2,false);
+        Check(TEXT("Один общий кадр"),bRender);
+        Only([this](){return !IsQuick();});
+        Check(TEXT("Каждый MID"),bRenderMID); Check(TEXT("Каждый LOW / LOD0"),bRenderLOW);
+        Check(TEXT("Каждый LOD"),bRenderLODS); Check(TEXT("Один выбранный LOD каждой модели"),bRenderSelected);
+        Field(TEXT("Номер выбранного LOD (0–4)"),SelectedLOD,TEXT("0"));
+        EndOnly();
+        Only([this](){return IsPro();});
         ProField(TEXT("preview_width"),TEXT("Рендер · ширина"),TEXT("1920"));
         ProField(TEXT("preview_height"),TEXT("Рендер · высота"),TEXT("1080"));
         ProField(TEXT("preview_warmup"),TEXT("Рендер · прогрев, секунд"),TEXT("5"));
@@ -284,20 +330,39 @@ public:
         ProField(TEXT("media_fov"),TEXT("Предметные кадры · FOV"),TEXT("40"));
         ProField(TEXT("media_margin"),TEXT("Предметные кадры · запас кадра"),TEXT("1.18"));
         ProField(TEXT("media_exposure"),TEXT("Предметные кадры · экспокоррекция"),TEXT("-0.75"));
-        ProField(TEXT("flythrough_seconds"),TEXT("Пролёт · длительность, секунд"),TEXT("8"));
-        ProField(TEXT("flythrough_fps"),TEXT("Пролёт · FPS"),TEXT("24"));
-        ProField(TEXT("flythrough_width"),TEXT("Пролёт · ширина"),TEXT("1280"));
-        ProField(TEXT("flythrough_height"),TEXT("Пролёт · высота"),TEXT("720"));
-        ProField(TEXT("flythrough_yaw_start"),TEXT("Пролёт · начальный ракурс"),TEXT("65"));
-        ProField(TEXT("flythrough_yaw_end"),TEXT("Пролёт · конечный ракурс"),TEXT("115"));
-        ProField(TEXT("flythrough_pitch"),TEXT("Пролёт · наклон"),TEXT("25"));
-        ProField(TEXT("flythrough_fov"),TEXT("Пролёт · FOV"),TEXT("50"));
+        EndOnly();
+
+        Section(TEXT("Пролёт камеры"),-1,false);
+        ProField(TEXT("flythrough_seconds"),TEXT("Длительность, секунд"),TEXT("8"));
+        ProField(TEXT("flythrough_fps"),TEXT("FPS"),TEXT("24"));
+        ProField(TEXT("flythrough_width"),TEXT("Ширина"),TEXT("1280"));
+        ProField(TEXT("flythrough_height"),TEXT("Высота"),TEXT("720"));
+        ProField(TEXT("flythrough_yaw_start"),TEXT("Начальный ракурс"),TEXT("65"));
+        ProField(TEXT("flythrough_yaw_end"),TEXT("Конечный ракурс"),TEXT("115"));
+        ProField(TEXT("flythrough_pitch"),TEXT("Наклон"),TEXT("25"));
+        ProField(TEXT("flythrough_fov"),TEXT("FOV"),TEXT("50"));
         Button(TEXT("Создать и отрендерить пролёт первого выбранного профиля"),[this](){return Send(TEXT("flythrough"));});
-        Check(TEXT("Служебный режим: использовать JSON вместо форм"),bRawProfile);
-        Button(TEXT("Сохранить активный профиль"),[this](){return Send(TEXT("save_profile"));});
-        Button(TEXT("Проверить импортированные ассеты"),[this](){return Send(TEXT("validate_assets"));});
-        Button(TEXT("Применить настройки к существующим ассетам"),[this](){return Send(TEXT("settings"));});
-        Form->AddSlot().AutoHeight().Padding(0,14)[SNew(STextBlock).Text(FText::FromString(TEXT("Индивидуальные настройки модели · пусто = наследовать")))];
+
+        Section(TEXT("Поставка"),3,false);
+        Check(TEXT("Чистый проект + проверка + ZIP"),bZip);
+        Field(TEXT("Каталог вывода (пусто — Saved)"),Output,TEXT(""));
+        Button(TEXT("Выбрать каталог вывода…"),[this](){return Browse(Output);});
+        Form=Main;
+
+        // Master navigation lives only in Master mode.
+        Form->AddSlot().AutoHeight().Padding(0,10)[SNew(SHorizontalBox).Visibility_Lambda([this](){return Visible(IsWizard());})
+            +SHorizontalBox::Slot().AutoWidth().Padding(0,0,8,0)[SNew(SButton).Text(FText::FromString(TEXT("← Назад")))
+                .IsEnabled_Lambda([this](){return Step>0;}).OnClicked_Lambda([this](){Step=FMath::Max(0,Step-1);return FReply::Handled();})]
+            +SHorizontalBox::Slot().AutoWidth()[SNew(SButton).Text(FText::FromString(TEXT("Далее →")))
+                .Visibility_Lambda([this](){return Visible(Step<3);}).OnClicked_Lambda([this](){Step=FMath::Min(3,Step+1);return FReply::Handled();})]];
+        Form->AddSlot().AutoHeight().Padding(0,6)[SNew(SHorizontalBox)
+            +SHorizontalBox::Slot().AutoWidth().Padding(0,0,8,0)[SNew(SButton).Text(FText::FromString(TEXT("Запустить подготовку")))
+                .Visibility_Lambda([this](){return Visible(!IsWizard() || Step==3);}).OnClicked_Lambda([this](){return Send(TEXT("start"));})]
+            +SHorizontalBox::Slot().AutoWidth()[SNew(SButton).Text(FText::FromString(TEXT("Остановить"))).OnClicked_Lambda([this](){return Send(TEXT("cancel"));})]];
+
+        // Professional-only service groups.
+        Section(TEXT("Индивидуальные настройки моделей"),-1,false);
+        Form->AddSlot().AutoHeight()[SNew(STextBlock).Text(FText::FromString(TEXT("Пусто = наследовать общий профиль")))];
         Field(TEXT("ID модели"),OverrideID,TEXT(""));
         auto OverrideField=[this](const TCHAR* Id,const TCHAR* Label){Field(Label,OverrideFields.FindOrAdd(Id),TEXT(""));};
         OverrideField(TEXT("lod_screen_sizes"),TEXT("Screen sizes этой модели (то же число LOD)"));
@@ -309,35 +374,45 @@ public:
         OverrideField(TEXT("normal_strength"),TEXT("Normal strength"));
         OverrideField(TEXT("uv_scale"),TEXT("UV scale"));
         OverrideField(TEXT("orm_texture"),TEXT("ORM: пусто = общий; - = отключить"));
-        Button(TEXT("Загрузить индивидуальные настройки из профиля UI"),[this](){return Send(TEXT("override_load"));});
-        Button(TEXT("Записать индивидуальные настройки в профиль UI"),[this](){return Send(TEXT("override_store"));});
-        Button(TEXT("Удалить индивидуальные настройки из профиля UI"),[this](){return Send(TEXT("override_delete"));});
+        Button(TEXT("Загрузить из профиля UI"),[this](){return Send(TEXT("override_load"));});
+        Button(TEXT("Записать в профиль UI"),[this](){return Send(TEXT("override_store"));});
+        Button(TEXT("Удалить из профиля UI"),[this](){return Send(TEXT("override_delete"));});
+
+        Section(TEXT("Проверка и диагностика"),-1,false);
+        Button(TEXT("Проверить импортированные ассеты"),[this](){return Send(TEXT("validate_assets"));});
+        Button(TEXT("Применить настройки к существующим ассетам"),[this](){return Send(TEXT("settings"));});
         Button(TEXT("Диагностика исходных FBX / GLB (без импорта)"),[this](){return Send(TEXT("source_diagnostics"));});
         Button(TEXT("Диагностика импорта LOW/LOD (создаёт тестовые ассеты)"),[this](){return Send(TEXT("import_diagnostics"));});
-        Button(TEXT("Очередь: обновить список запусков"),[this](){return Send(TEXT("queue"));});
+
+        Section(TEXT("Очередь запусков"),-1,false);
+        Button(TEXT("Обновить список запусков"),[this](){return Send(TEXT("queue"));});
         Form->AddSlot().AutoHeight()[Combo(Runs,RunID,&RunMenu)];
         Button(TEXT("Показать отчёт выбранного запуска"),[this](){return Send(TEXT("job_status"));});
         Button(TEXT("Возобновить выбранный запуск"),[this](){return Send(TEXT("resume"));});
-        Form=Main;
-        Form->AddSlot().AutoHeight().Padding(0,12)[SNew(STextBlock).Visibility_Lambda([this](){return Mode==TEXT("Профессиональный")?EVisibility::Visible:EVisibility::Collapsed;}).Text(FText::FromString(TEXT("Служебный JSON — приоритет только при включённом флажке"))).AutoWrapText(true)];
-        Form->AddSlot().AutoHeight()[SNew(SBox).Visibility_Lambda([this](){return Mode==TEXT("Профессиональный")?EVisibility::Visible:EVisibility::Collapsed;}).HeightOverride(220)[SAssignNew(Advanced,SMultiLineEditableTextBox)]];
-        Button(TEXT("Загрузить активный профиль в редактор JSON"),[this](){
-            return Send(TEXT("load_profile"));});
-        Button(TEXT("Content: сканировать папки / очистка…"),[this](){bShowContent=true;return Send(TEXT("scan_content"));});
+
+        Section(TEXT("Профиль и служебный JSON"),-1,false);
+        Button(TEXT("Сохранить активный профиль"),[this](){return Send(TEXT("save_profile"));});
+        Button(TEXT("Загрузить активный профиль в редактор JSON"),[this](){return Send(TEXT("load_profile"));});
+        Check(TEXT("Служебный режим: использовать JSON вместо форм"),bRawProfile);
+        Form->AddSlot().AutoHeight().Padding(0,6)[SNew(STextBlock).Text(FText::FromString(TEXT("Служебный JSON — приоритет только при включённом флажке"))).AutoWrapText(true)];
+        Form->AddSlot().AutoHeight()[SNew(SBox).HeightOverride(220)[SAssignNew(Advanced,SMultiLineEditableTextBox)]];
+
+        Section(TEXT("Content: сканирование и очистка"),-1,false);
+        Button(TEXT("Сканировать папки Content"),[this](){bShowContent=true;return Send(TEXT("scan_content"));});
         TSharedPtr<SVerticalBox> ContentBody;
-        Main->AddSlot().AutoHeight()[SNew(SBox).Visibility_Lambda([this](){return bShowContent?EVisibility::Visible:EVisibility::Collapsed;})[SAssignNew(ContentBody,SVerticalBox)]];
+        Form->AddSlot().AutoHeight()[SNew(SBox).Visibility_Lambda([this](){return Visible(bShowContent);})[SAssignNew(ContentBody,SVerticalBox)]];
         Form=ContentBody;
         Form->AddSlot().AutoHeight()[Combo(Folders,CleanupRoot,&FolderMenu)];
-        Button(TEXT("Content: показать план очистки выбранной папки"),[this](){return Send(TEXT("cleanup_plan"));});
-        Button(TEXT("Content: подтвердить удаление по просмотренному плану…"),[this](){
+        Button(TEXT("Показать план очистки выбранной папки"),[this](){return Send(TEXT("cleanup_plan"));});
+        Button(TEXT("Подтвердить удаление по просмотренному плану…"),[this](){
             if(FMessageDialog::Open(EAppMsgType::YesNo,FText::FromString(TEXT("Удалить ассеты выбранной папки по ранее показанному плану? Будет сделана резервная копия. Исходники не затрагиваются.")))==EAppReturnType::Yes) return Send(TEXT("cleanup_confirm"));
             return FReply::Handled();});
+
+        // OpenAI: a toggle in Master, a collapsible group in Professional, hidden in Quick start.
         Form=Main;
-        Button(TEXT("OpenAI: настройки и чат…"),[this](){bShowAI=!bShowAI;return FReply::Handled();});
-        TSharedPtr<SVerticalBox> AIBody;
-        Main->AddSlot().AutoHeight()[SNew(SBox).Visibility_Lambda([this](){return bShowAI?EVisibility::Visible:EVisibility::Collapsed;})[SAssignNew(AIBody,SVerticalBox)]];
-        Form=AIBody;
-        Form->AddSlot().AutoHeight().Padding(0,14)[SNew(STextBlock).Text(FText::FromString(TEXT("OpenAI · Настройки и помощник")))];
+        Form->AddSlot().AutoHeight().Padding(0,6)[SNew(SButton).Text(FText::FromString(TEXT("Помощник OpenAI: показать / скрыть")))
+            .Visibility_Lambda([this](){return Visible(IsWizard());}).OnClicked_Lambda([this](){bShowAI=!bShowAI;return FReply::Handled();})];
+        Section(TEXT("OpenAI · настройки и помощник"),-1,false,[this](){return IsWizard() ? bShowAI : IsPro();});
         Form->AddSlot().AutoHeight()[SAssignNew(Key,SEditableTextBox).IsPassword(true).HintText(FText::FromString(TEXT("Новый API-ключ (пусто — текущий)")))];
         Check(TEXT("Запомнить ключ на этом компьютере (Windows DPAPI)"),bRemember);
         Form->AddSlot().AutoHeight()[Combo(Models,Model,&ModelMenu)];
@@ -371,7 +446,7 @@ public:
     {
         if (!IsRunningCommandlet()) FGlobalTabmanager::Get()->RegisterNomadTabSpawner(PipelineTab,
             FOnSpawnTab::CreateLambda([](const FSpawnTabArgs&){TSharedRef<SPipelinePanel> Panel=SNew(SPipelinePanel); LivePipelinePanel=Panel; return SNew(SDockTab).TabRole(ETabRole::NomadTab)[Panel];}))
-            .SetDisplayName(FText::FromString(TEXT("Asset Pack Pipeline"))).SetMenuType(ETabSpawnerMenuType::Hidden);
+            .SetDisplayName(FText::FromString(TEXT("MESHFLOW Asset Pack Pipeline"))).SetMenuType(ETabSpawnerMenuType::Hidden);
     }
     virtual void ShutdownModule() override
     {

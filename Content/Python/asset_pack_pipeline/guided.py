@@ -52,6 +52,35 @@ def prepare(base, source, pack, fmt, variants='both', renders=(), lod=0, finaliz
     return profiles, steps
 
 
+RENDER_OPERATIONS = ('overview', 'preview', 'media')
+
+
+def render_steps(steps):
+    """Stage 4 'render only': image jobs of an already imported pack, then export."""
+    renders = [s for s in steps if s[1] in RENDER_OPERATIONS]
+    if not any(op in ('preview', 'media') for _, op in renders):
+        raise ValueError('В разделе «3. Изображения» не выбран ни один рендер.')
+    # The overview scene is only needed by the overview preview.
+    keep = {v for v, op in renders if op == 'preview'}
+    renders = [(v, op) for v, op in renders if op != 'overview' or v in keep]
+    return renders+[(renders[-1][0], 'export_renders')]
+
+
+def export_final_renders(reports, profile_path):
+    """Copy finished PNGs to <output or Saved/.../RenderExports>/<pack>_Renders_<id>/Renders(.zip)."""
+    import uuid
+    from .discovery import read_json
+    from .final_output import export_renders
+    if not reports:
+        raise RuntimeError('Рендеры не созданы.')
+    profile = read_json(profile_path)
+    output = profile.get('delivery', {}).get('output_directory', '')
+    base = Path(output) if output else Path(reports[0]['output_directory']).resolve().parents[1]/'RenderExports'
+    folder = base/f"{profile['pack_id']}_Renders_{uuid.uuid4().hex[:8]}"
+    folder.mkdir(parents=True)
+    return export_renders(reports, folder)
+
+
 class Session:
     """Advance only after a successful job. Cancel never launches later steps."""
     def __init__(self, api, paths, steps):
@@ -96,7 +125,9 @@ class Session:
                     self.render_runs.append(report)
             if not self.steps:
                 self.done = True
-                self.label = ('Поставка готова: '+self.result['zip_path']) if self.result else 'Меши и сцены подготовлены.'
+                self.label = (('Поставка готова: '+self.result['zip_path']) if self.result and 'zip_path' in self.result
+                              else ('Рендеры готовы: '+self.result['renders']['zip_path']) if self.result
+                              else 'Меши и сцены подготовлены.')
                 return
             variant, operation = self.steps.pop(0)
             path = self.paths[variant]
@@ -126,6 +157,8 @@ class Session:
                 self.result = self.api.package_delivery(self.delivery_id)
                 from .final_output import export_renders
                 self.result['renders'] = export_renders(self.render_runs, Path(self.result['zip_path']).parent)
+            elif operation == 'export_renders':
+                self.result = {'renders': export_final_renders(self.render_runs, path)}
             else:
                 raise ValueError('Неизвестная операция '+operation)
         except Exception as error:

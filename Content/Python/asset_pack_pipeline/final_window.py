@@ -56,6 +56,13 @@ class FinalWindow:
         row.pack(fill='x', pady=6)
         t.Button(row, text='Очистить импортированный пак…', command=self.review_import_cleanup).pack(side='left')
         t.Button(row, text='Запустить этап 4 для подготовленных мешей', command=self.final_only).pack(side='left', padx=8)
+        if parent is getattr(self, 'delivery_tab', None):
+            return  # Render-only uses the quick-start «3. Изображения» settings.
+        t.Button(row, text='Рендер и вывод финальных моделей', style='Accent.TButton',
+                 command=self.render_only).pack(side='left')
+        t.Label(box, text='Рендер берёт настройки из «3. Изображения» для уже импортированных мешей; PNG и Renders.zip '
+                'сохраняются в каталог вывода (пусто — Saved/AssetPackPipeline/RenderExports).',
+                style='Muted.TLabel', wraplength=900).pack(anchor='w')
 
     def browse_final_output(self):
         from tkinter import filedialog
@@ -107,6 +114,30 @@ class FinalWindow:
                     known = {r['run_id'] for r in session.render_runs}
                     session.render_runs.extend(r for r in previous.render_runs if r['run_id'] not in known)
             self.guide_session = session
+        except Exception as error:
+            self._callback_error(type(error), error, error.__traceback__)
+
+    def _render_plan(self, kind):
+        """Profiles from the quick-start form plus the stage-4 render-only steps."""
+        from . import guided
+        profiles, steps = self.guide_plan()
+        folder = self.saved/'UI'/kind/uuid.uuid4().hex
+        folder.mkdir(parents=True)
+        paths = {}
+        for name, profile in profiles.items():
+            path = folder/(name+'.json')
+            path.write_text(json.dumps(profile, ensure_ascii=False, indent=2), encoding='utf-8')
+            paths[name] = str(path)
+        return paths, guided.render_steps(steps)
+
+    def render_only(self):
+        try:
+            if self.api.readiness()['active_run'] or getattr(self, 'guide_session', None) and not self.guide_session.done:
+                raise RuntimeError('Сначала завершите текущую задачу.')
+            from . import guided
+            paths, steps = self._render_plan('Renders')
+            self.guide_session = guided.Session(self.api, paths, steps)
+            self._log('Рендер финальных моделей: '+', '.join(v+' · '+op for v, op in steps))
         except Exception as error:
             self._callback_error(type(error), error, error.__traceback__)
 

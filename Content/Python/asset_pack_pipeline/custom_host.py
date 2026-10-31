@@ -18,11 +18,18 @@ class CustomWindow(PipelineWindow):
         self.heartbeat_gaps=[]
         super().__init__(parent_to_unreal=False,pump=False,api_adapter=SnapshotAPI(config),saved_directory=config['saved'])
         self.widget_seconds=time.monotonic()-self.started
-        self.root.title('Asset Pack Pipeline · Custom UI · '+Path(config['saved']).parents[1].name)
+        from .custom_chrome import TITLE
+        self.root.title(TITLE)
+        self.chrome.apply_native_frame()
         self.state_label.configure(text='Окно готово. Подключение к Unreal…')
         self.api.start()
         self.root.after(50,self.external_poll)
         self.root.after(20,self.heartbeat)
+
+    def _build(self):
+        from .custom_chrome import WindowChrome
+        self.chrome=WindowChrome(self.root,self.close)
+        super()._build()
 
     def heartbeat(self):
         if self.closed:return
@@ -113,6 +120,15 @@ class CustomWindow(PipelineWindow):
                     path=folder/(name+'.json');path.write_text(json.dumps(profile,ensure_ascii=False,indent=2),encoding='utf-8');paths[name]=str(path)
             first=next(iter(paths))
             self.api.start_guided(paths,[(first,op) for op in ('delivery','verify_delivery','package')])
+        except Exception as error:self._callback_error(type(error),error,error.__traceback__)
+
+    def render_only(self):
+        try:
+            ready=self.api.readiness()
+            if ready['active_run'] or ready.get('guided_running'):raise RuntimeError('Дождитесь текущей задачи.')
+            paths,steps=self._render_plan('CustomRenders')
+            self.api.start_guided(paths,steps)
+            self._log('Рендер финальных моделей: '+', '.join(v+' · '+op for v,op in steps))
         except Exception as error:self._callback_error(type(error),error,error.__traceback__)
 
     def cancel(self):

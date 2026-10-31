@@ -61,7 +61,7 @@ def dispatch(method,args,kwargs):
     if method=='start_guided':
         if api.readiness()['active_run']:raise RuntimeError('Unreal уже выполняет задачу.')
         paths,steps=args
-        allowed={'import','settings','validate','overview','preview','media','delivery','verify_delivery','package'}
+        allowed={'import','settings','validate','overview','preview','media','delivery','verify_delivery','package','export_renders'}
         if not paths or any(k not in paths or op not in allowed for k,op in steps):raise ValueError('Invalid guided plan')
         from . import guided
         previous=native_bridge._session
@@ -133,11 +133,61 @@ def start():
     return {'directory':str(directory()),'session':_session,'token':_token,'engine_pid':os.getpid(),
             'saved':str(Path(unreal.Paths.project_saved_dir()).resolve()/'AssetPackPipeline')}
 
+def _activate(pid):
+    """Bring the client's main window forward. Unreal holds the foreground when its
+    menu is used, so it may hand focus over; the Tk process itself may not."""
+    if os.name!='nt':return False
+    import ctypes
+    from ctypes import wintypes
+    user=ctypes.WinDLL('user32')
+    for name in ('IsWindowVisible','IsIconic','SetForegroundWindow'):getattr(user,name).argtypes=[wintypes.HWND]
+    user.GetWindowThreadProcessId.argtypes=[wintypes.HWND,ctypes.POINTER(wintypes.DWORD)]
+    user.GetWindowTextW.argtypes=[wintypes.HWND,wintypes.LPWSTR,ctypes.c_int]
+    user.ShowWindow.argtypes=[wintypes.HWND,ctypes.c_int]
+    found=[]
+    def visit(hwnd,_):
+        owner=wintypes.DWORD()
+        user.GetWindowThreadProcessId(hwnd,ctypes.byref(owner))
+        if owner.value==pid and (user.IsWindowVisible(hwnd) or user.IsIconic(hwnd)):
+            text=ctypes.create_unicode_buffer(256);user.GetWindowTextW(hwnd,text,256)
+            found.append((text.value!='MESHFLOW Asset Pack Pipeline',hwnd))
+        return True
+    user.EnumWindows(ctypes.WINFUNCTYPE(wintypes.BOOL,wintypes.HWND,wintypes.LPARAM)(visit),0)
+    if not found:return False
+    hwnd=min(found)[1]
+    user.ShowWindow(hwnd,9 if user.IsIconic(hwnd) else 5) # SW_RESTORE / SW_SHOW
+    user.SetForegroundWindow(hwnd)
+    return True
+
+def _close_orphan():
+    """A client from an earlier editor session holds a dead token; close it."""
+    marker=directory()/'client.pid'
+    try:pid=int(marker.read_text())
+    except (OSError,ValueError):return
+    marker.unlink(missing_ok=True)
+    if os.name!='nt' or pid==os.getpid():return
+    import ctypes
+    kernel=ctypes.WinDLL('kernel32')
+    kernel.OpenProcess.restype=ctypes.c_void_p
+    handle=kernel.OpenProcess(0x1001,False,pid) # TERMINATE | QUERY_LIMITED_INFORMATION
+    if not handle:return
+    try:
+        name=ctypes.create_unicode_buffer(1024);size=ctypes.c_uint32(1024)
+        kernel.QueryFullProcessImageNameW.argtypes=[ctypes.c_void_p,ctypes.c_uint32,ctypes.c_wchar_p,ctypes.POINTER(ctypes.c_uint32)]
+        engine_python=Path(unreal.Paths.engine_dir()).resolve()/'Binaries/ThirdParty/Python3/Win64/python.exe'
+        if kernel.QueryFullProcessImageNameW(handle,0,name,ctypes.byref(size)) and Path(name.value).resolve()==engine_python:
+            kernel.TerminateProcess.argtypes=[ctypes.c_void_p,ctypes.c_uint32]
+            kernel.TerminateProcess(handle,0)
+    finally:
+        kernel.CloseHandle.argtypes=[ctypes.c_void_p];kernel.CloseHandle(handle)
+
 def launch(test_plan=None):
     global _process,_focus
     if _process is not None and _process.poll() is None:
         _focus+=1
+        _activate(_process.pid)
         return {'already_open':True,'pid':_process.pid}
+    _close_orphan()
     config=start()
     (directory()/'client-status.json').unlink(missing_ok=True)
     if test_plan:config['probe_plan']=test_plan
@@ -152,4 +202,5 @@ def launch(test_plan=None):
         _process=subprocess.Popen([str(python),'-u','-m','asset_pack_pipeline.custom_host'],stdin=subprocess.PIPE,
             stdout=stream,stderr=stream,env=env,creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
     _process.stdin.write((json.dumps(config)+'\n').encode());_process.stdin.close()
+    (directory()/'client.pid').write_text(str(_process.pid))
     return {'pid':_process.pid,'log':str(log)}

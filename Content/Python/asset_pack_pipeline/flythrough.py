@@ -122,8 +122,8 @@ def launch(report,state):
     output.override_existing_output=False;output.flush_disk_writes_per_shot=True
     preset.find_or_add_setting_by_class(u.MoviePipelineImageSequenceOutput_PNG)
     preset.find_or_add_setting_by_class(u.MoviePipelineDeferredPassBase)
-    aa=preset.find_or_add_setting_by_class(u.MoviePipelineAntiAliasingSetting)
-    aa.spatial_sample_count=1;aa.temporal_sample_count=1;aa.engine_warm_up_count=16;aa.render_warm_up_count=8
+    from . import render_quality
+    render_quality.movie_pipeline(preset)
     executor=u.new_object(u.MoviePipelinePIEExecutor)
     def finished(obj,success):state.update(finished=True,success=bool(success))
     def errored(obj,pipeline,fatal,message):

@@ -6,6 +6,13 @@ import time
 from pathlib import Path
 
 
+# A screenshot task only completes once the editor viewport draws a frame. A
+# minimised/background editor may never draw, so stop waiting eventually.
+STALL_GRACE_SECONDS = 60
+STALL_MESSAGE = ('Unreal не отрисовал снимок. Разверните окно Unreal, включите Realtime во вьюпорте '
+                 'и повторите рендер.')
+
+
 def settings(profile):
     config = dict(profile.get('previews', {}))
     for key, default in [('width', 1920), ('height', 1080)]:
@@ -48,15 +55,17 @@ def inspect_png(path, width, height):
 def advance(report, state):
     """One editor tick. Keep screenshot task alive until it has completed."""
     import unreal as u
-    from . import overview
+    from . import overview, render_quality
     config = report['preview_settings']
     item = next((a for a in report['assets'] if a['status'] in ('pending', 'running')), None)
     if item is None:
+        render_quality.restore()
         return True
     if report['cancel_requested'] and 'task' not in state:
         for row in report['assets']:
             if row['status'] in ('pending', 'running'):
                 row['status'] = 'cancelled'
+        render_quality.restore()
         return True
     now = time.monotonic()
     if item['status'] == 'pending':
@@ -64,6 +73,8 @@ def advance(report, state):
         validation = overview.validate_current(report['manifest'], item['lod_review'])
         if not validation['passed']:
             raise RuntimeError('Saved scene failed read-back; regenerate it before exporting')
+        render_quality.apply()
+        render_quality.prestream(overview._actors(report['manifest']['profile']).values(), config['warmup_seconds'])
         item.update(status='running', scene_validation=validation)
         state.update(started=now, warm_until=now+config['warmup_seconds'])
         return False
@@ -90,6 +101,8 @@ def advance(report, state):
         state['task'] = task
         return False
     if not state['task'].is_task_done():
+        if now-state['started'] > config['timeout_seconds']+STALL_GRACE_SECONDS:
+            raise RuntimeError(STALL_MESSAGE)
         return False
     state.pop('task')
     if overview._current()[1] != item['map_path']:

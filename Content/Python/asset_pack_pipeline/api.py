@@ -289,6 +289,8 @@ def _advance_impl(delta=0):
             runner=media.advance if report['kind']=='individual_previews' else previews.advance
             done = runner(report, _preview_states[report['run_id']])
         except Exception as error:
+            from . import render_quality
+            render_quality.restore()
             report.update(error=str(error), traceback=traceback.format_exc())
             for row in report['assets']:
                 if row['status'] in ('pending', 'running'):

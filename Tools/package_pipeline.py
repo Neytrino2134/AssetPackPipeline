@@ -1,0 +1,31 @@
+"""Package only plugin source/content/docs, excluding caches and test host data."""
+from pathlib import Path
+import json
+from zipfile import ZipFile, ZIP_DEFLATED
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--binary-source', type=Path)
+args = parser.parse_args()
+
+project = Path(__file__).resolve().parents[3]
+plugin = project / 'Plugins' / 'AssetPackPipeline'
+version = json.loads((plugin / 'AssetPackPipeline.uplugin').read_text(encoding='utf-8-sig'))['VersionName']
+output = project / 'Releases' / f'AssetPackPipeline-{version}.zip'
+output.parent.mkdir(exist_ok=True)
+with ZipFile(output, 'w', ZIP_DEFLATED) as archive:
+    for path in sorted(plugin.rglob('*')):
+        if path.is_file() and path.suffix.lower() != '.pdb' and not any(part in ('.git', '__pycache__', 'Intermediate') for part in path.parts):
+            if args.binary_source and 'Binaries' in path.relative_to(plugin).parts:
+                continue
+            archive.write(path, path.relative_to(plugin.parent))
+    if args.binary_source:
+        assert (args.binary_source/'UnrealEditor-AssetPackPipelineEditor.dll').is_file()
+        assert (args.binary_source/'UnrealEditor.modules').is_file()
+        for file in args.binary_source.iterdir():
+            if file.suffix in ('.dll','.modules'):
+                archive.write(file, 'AssetPackPipeline/Binaries/Win64/'+file.name)
+with ZipFile(output) as archive:
+    assert archive.testzip() is None
+    assert 'AssetPackPipeline/AssetPackPipeline.uplugin' in archive.namelist()
+print(output)

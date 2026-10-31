@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "pack_id": "GraveStones02",
+  "source_root": "REPLACE_WITH_EXPORT_DIRECTORY",
+  "source_format": "FBX",
+  "destination_root": "/Game/GraveStones02",
+  "asset_ids": [
+    "GraveStones_02_01"
+  ],
+  "mesh_info": "MeshInfo.json",
+  "texture_directory": "FBX/Textures",
+  "high_policy": "exclude",
+  "lod_screen_sizes": [
+    1.0,
+    0.5,
+    0.25,
+    0.125,
+    0.0625
+  ],
+  "nanite_enabled": false,
+  "remove_degenerates": true,
+  "roughness": 0.85,
+  "collision": "box",
+  "overview": {
+    "columns": 4,
+    "spacing": 100,
+    "label_size": 5,
+    "require_valid_assets": true,
+    "pilot_camera": true
+  },
+  "previews": {
+    "width": 1280,
+    "height": 720,
+    "mode": "overview",
+    "camera": "overview",
+    "warmup_seconds": 5,
+    "output_directory": ""
+  },
+  "metallic": 0,
+  "normal_strength": 1,
+  "uv_scale": 1,
+  "orm_texture": "",
+  "asset_overrides": {},
+  "incremental": true,
+  "delivery": {
+    "maps": "overview",
+    "output_directory": ""
+  },
+  "media": {
+    "yaw_angles": [
+      90
+    ],
+    "pitch": 15,
+    "fov": 90,
+    "margin": 1.18,
+    "exposure_bias": 0,
+    "key_intensity": 3,
+    "sky_intensity": 1.1,
+    "lod_index": 0,
+    "include_invalid": false
+  }
+}

@@ -1,0 +1,268 @@
+{
+  "version": "0.23.0",
+  "date": "2026-10-31",
+  "engine": "UE 5.8.4 / Win64",
+  "unit_tests": 113,
+  "e2e_format": "FBX",
+  "unique_models": 10,
+  "meshes": 20,
+  "fresh_project_verification": "passed",
+  "project_zip_integrity": "passed",
+  "project_zip_sha256": "4bd9d9d9a6e47a8f71602052785d1ac9ad0d65a48c63adea9773578da9ea8e08",
+  "overview_png_count": 1,
+  "overview_visually_checked": true,
+  "cleanup_deleted": 55,
+  "cleanup_retained": 0,
+  "flight": {
+    "passed": true,
+    "expected_frames": 24,
+    "run_id": "966c4793b2654f758c60d410365c1964",
+    "status": "passed",
+    "frames": 24,
+    "report_path": "D:\\Documents\\Unreal Projects\\MCP_Setup_Projects\\Saved\\NativeFullHost\\Saved\\AssetPackPipeline\\Runs\\966c4793b2654f758c60d410365c1964\\report.json",
+    "seconds": 8.06300000000192
+  },
+  "core_widget_soak": {
+    "passed": true,
+    "steps": 1197,
+    "reopen_cycles": 60,
+    "target_seconds": 1200,
+    "kind": "programmatic_widget_soak",
+    "seconds": 1200.0780000000013,
+    "tkinter_loaded": false
+  },
+  "final_layout_smoke": {
+    "passed": true,
+    "iterations": 10,
+    "bridge_readonly": true,
+    "tkinter_loaded": false
+  },
+  "limits": [
+    "Widget soak used core panel before final compact layout/model-preference restoration; final layout passed a separate short lifecycle test.",
+    "No live OpenAI request: key unavailable in accessible environment/local settings.",
+    "Programmatic text tests do not emulate real IME or OS Alt-Tab.",
+    "No Fab submission or artistic acceptance."
+  ],
+  "measurements": [
+    {
+      "id": "Containers_01_01",
+      "source_kind": "LOD",
+      "lod_count": 5,
+      "triangles": [
+        2896,
+        1498,
+        1000,
+        498,
+        244
+      ],
+      "nanite_triangles": 0
+    },
+    {
+      "id": "Containers_01_02",
+      "source_kind": "LOD",
+      "lod_count": 5,
+      "triangles": [
+        2900,
+        1500,
+        1000,
+        500,
+        246
+      ],
+      "nanite_triangles": 0
+    },
+    {
+      "id": "Containers_01_03",
+      "source_kind": "LOD",
+      "lod_count": 5,
+      "triangles": [
+        2900,
+        1498,
+        1000,
+        498,
+        248
+      ],
+      "nanite_triangles": 0
+    },
+    {
+      "id": "Containers_01_04",
+      "source_kind": "LOD",
+      "lod_count": 5,
+      "triangles": [
+        2900,
+        1500,
+        1000,
+        500,
+        250
+      ],
+      "nanite_triangles": 0
+    },
+    {
+      "id": "Containers_01_05",
+      "source_kind": "LOD",
+      "lod_count": 5,
+      "triangles": [
+        2900,
+        1500,
+        1000,
+        500,
+        250
+      ],
+      "nanite_triangles": 0
+    },
+    {
+      "id": "Containers_01_06",
+      "source_kind": "LOD",
+      "lod_count": 5,
+      "triangles": [
+        2898,
+        1498,
+        1000,
+        500,
+        250
+      ],
+      "nanite_triangles": 0
+    },
+    {
+      "id": "Containers_01_07",
+      "source_kind": "LOD",
+      "lod_count": 5,
+      "triangles": [
+        2900,
+        1500,
+        1000,
+        500,
+        250
+      ],
+      "nanite_triangles": 0
+    },
+    {
+      "id": "Containers_01_08",
+      "source_kind": "LOD",
+      "lod_count": 5,
+      "triangles": [
+        2900,
+        1500,
+        1000,
+        500,
+        250
+      ],
+      "nanite_triangles": 0
+    },
+    {
+      "id": "Containers_01_09",
+      "source_kind": "LOD",
+      "lod_count": 5,
+      "triangles": [
+        2900,
+        1500,
+        1000,
+        500,
+        250
+      ],
+      "nanite_triangles": 0
+    },
+    {
+      "id": "Containers_01_10",
+      "source_kind": "LOD",
+      "lod_count": 5,
+      "triangles": [
+        2900,
+        1498,
+        1000,
+        500,
+        250
+      ],
+      "nanite_triangles": 0
+    },
+    {
+      "id": "Containers_01_01",
+      "source_kind": "MID",
+      "lod_count": 1,
+      "triangles": [
+        2394
+      ],
+      "nanite_triangles": 12488
+    },
+    {
+      "id": "Containers_01_02",
+      "source_kind": "MID",
+      "lod_count": 1,
+      "triangles": [
+        1526
+      ],
+      "nanite_triangles": 9892
+    },
+    {
+      "id": "Containers_01_03",
+      "source_kind": "MID",
+      "lod_count": 1,
+      "triangles": [
+        1618
+      ],
+      "nanite_triangles": 12196
+    },
+    {
+      "id": "Containers_01_04",
+      "source_kind": "MID",
+      "lod_count": 1,
+      "triangles": [
+        832
+      ],
+      "nanite_triangles": 7374
+    },
+    {
+      "id": "Containers_01_05",
+      "source_kind": "MID",
+      "lod_count": 1,
+      "triangles": [
+        1388
+      ],
+      "nanite_triangles": 9419
+    },
+    {
+      "id": "Containers_01_06",
+      "source_kind": "MID",
+      "lod_count": 1,
+      "triangles": [
+        1538
+      ],
+      "nanite_triangles": 9064
+    },
+    {
+      "id": "Containers_01_07",
+      "source_kind": "MID",
+      "lod_count": 1,
+      "triangles": [
+        1774
+      ],
+      "nanite_triangles": 10538
+    },
+    {
+      "id": "Containers_01_08",
+      "source_kind": "MID",
+      "lod_count": 1,
+      "triangles": [
+        948
+      ],
+      "nanite_triangles": 6416
+    },
+    {
+      "id": "Containers_01_09",
+      "source_kind": "MID",
+      "lod_count": 1,
+      "triangles": [
+        1166
+      ],
+      "nanite_triangles": 9232
+    },
+    {
+      "id": "Containers_01_10",
+      "source_kind": "MID",
+      "lod_count": 1,
+      "triangles": [
+        820
+      ],
+      "nanite_triangles": 8356
+    }
+  ]
+}

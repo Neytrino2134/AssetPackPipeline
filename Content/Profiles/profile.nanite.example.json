@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "pack_id": "GraveStones02",
+  "source_root": "REPLACE_WITH_EXPORT_DIRECTORY",
+  "source_format": "FBX",
+  "destination_root": "/Game/GraveStones02_Nanite",
+  "asset_ids": ["GraveStones_02_01"],
+  "mesh_info": "MeshInfo.json",
+  "texture_directory": "FBX/Textures",
+  "high_policy": "exclude",
+  "lod_screen_sizes": [1, 0.5, 0.25, 0.125, 0.0625],
+  "nanite_enabled": true,
+  "nanite_source": "AUTO",
+  "validation_policy": "warn",
+  "remove_degenerates": true,
+  "collision": "box",
+  "incremental": true,
+  "delivery": {"maps": "overview"}
+}

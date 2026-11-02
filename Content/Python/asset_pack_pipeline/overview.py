@@ -234,8 +234,9 @@ def build(manifest, backup_folder, lod_review=False):
     floor = _spawn(existing, profile, 'Floor', u.StaticMeshActor, [0, 0, -5])
     floor.static_mesh_component.set_static_mesh(u.load_asset('/Engine/BasicShapes/Cube'))
     floor.static_mesh_component.set_material(0, _floor_material(profile))
+    from .lighting import key_rotation
     light = _spawn(existing, profile, 'KeyLight', u.DirectionalLight, [0, 0, planned['height'] + 300],
-                   u.Rotator(pitch=-45, yaw=60, roll=0))
+                   u.Rotator(**key_rotation(-90)))
     component = light.get_component_by_class(u.DirectionalLightComponent)
     component.set_mobility(u.ComponentMobility.MOVABLE)
     component.set_intensity(6.0)
@@ -310,8 +311,13 @@ def open_map(manifest, lod_review=False):
         raise RuntimeError(f'Could not load overview: {path}')
     # Upgrade owned maps made by older versions, including render-only runs.
     ensure_backdrop_floor(manifest, lod_review)
-    camera = _actors(manifest['profile']).get('Camera_Overview')
+    actors = _actors(manifest['profile'])
+    camera = actors.get('Camera_Overview')
     if camera:
+        from .lighting import apply_key
+        light=actors.get('KeyLight')
+        if light and apply_key(light,camera,u) and not les.save_current_level():
+            raise RuntimeError('Could not save camera-side overview lighting')
         les.pilot_level_actor(camera)
     return {'map_path': path, 'opened': True}
 

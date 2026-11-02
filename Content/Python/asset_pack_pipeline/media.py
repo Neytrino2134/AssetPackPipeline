@@ -160,7 +160,8 @@ def advance(report,state):
         if mesh.static_mesh_component.get_editor_property('forced_lod_model')!=forced:
             raise RuntimeError('Forced LOD read-back failed')
         light=actors['KeyLight']
-        light.set_actor_rotation(u.Rotator(pitch=-40,yaw=row['yaw']+215,roll=0),False)
+        from .lighting import apply_key
+        apply_key(light,camera,u)
         light.get_component_by_class(u.DirectionalLightComponent).set_intensity(config['key_intensity'])
         actors['SkyLight'].get_component_by_class(u.SkyLightComponent).set_intensity(config['sky_intensity'])
         actors['Floor'].set_actor_scale3d(u.Vector(1000,1000,.1))

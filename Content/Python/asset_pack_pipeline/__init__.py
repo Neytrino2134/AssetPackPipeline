@@ -1,2 +1,2 @@
 """Asset Pack Pipeline editor automation."""
-__version__ = '0.25.2'
+__version__ = '0.25.3'

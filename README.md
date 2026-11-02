@@ -1,4 +1,7 @@
-# Asset Pack Pipeline 0.25.2
+# Asset Pack Pipeline 0.25.3
+
+Overview and individual stills share camera-side key lighting (Pitch 225 degrees,
+Yaw 60 degrees in the default front view), rotating with individual view changes.
 
 Overview scenes use a ground backdrop at least 2 km wide, extending beyond the
 cameras. Older owned overview maps upgrade their floor on opening through the pipeline.

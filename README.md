@@ -1,4 +1,7 @@
-# Asset Pack Pipeline 0.27.0
+# Asset Pack Pipeline 0.27.1
+
+Custom UI uses the transparent cyan/purple MeshFlow logo in its title bar and
+window icon. Agent release publication uploads and verifies both update assets.
 
 Window and Slate tab titles display the plugin version. Custom UI pins its
 actions, status and progress below scrolling content in all three modes.

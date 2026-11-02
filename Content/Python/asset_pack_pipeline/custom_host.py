@@ -20,6 +20,7 @@ class CustomWindow(PipelineWindow):
         self.widget_seconds=time.monotonic()-self.started
         from .custom_chrome import TITLE
         self.root.title(TITLE)
+        if self.chrome.logo:self.root.iconphoto(True,self.chrome.logo)
         self.chrome.apply_native_frame()
         self.state_label.configure(text='Окно готово. Подключение к Unreal…')
         self.api.start()

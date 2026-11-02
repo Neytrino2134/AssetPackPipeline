@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="145 190 960 850" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">MeshFlow line logo</title>
+  <desc id="desc">Outlined MeshFlow M mark with a cyan to purple gradient.</desc>
+  <defs>
+    <linearGradient id="meshflow-gradient" x1="193" y1="220" x2="1062" y2="1000" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00D9F5"/>
+      <stop offset=".34" stop-color="#168BFF"/>
+      <stop offset=".68" stop-color="#875CFF"/>
+      <stop offset="1" stop-color="#B44CFF"/>
+    </linearGradient>
+  </defs>
+  <g stroke="url(#meshflow-gradient)" stroke-width="34" stroke-linecap="round" stroke-linejoin="miter">
+    <path d="M402 840V615l216 178 167-133L265 233c-31-26-72-3-72 38v688c0 32 36 48 61 28l128-103c13-10 20-25 20-44Z"/>
+    <path d="m668 479 323-246c31-25 71-3 71 38v688c0 32-36 48-61 28L873 884c-12-10-19-25-19-43V644L668 479Z"/>
+  </g>
+</svg>

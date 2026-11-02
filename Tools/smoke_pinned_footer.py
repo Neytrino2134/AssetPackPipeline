@@ -3,6 +3,7 @@ import json
 import traceback
 from preview_custom_chrome import create_window,plugin
 from asset_pack_pipeline.custom_chrome import TITLE
+from asset_pack_pipeline import __version__
 window=create_window();root=window.root
 result={'passed':False,'checks':[]}
 def bounds(widget):
@@ -34,7 +35,7 @@ def check(index=0):
 def scrolled(before,actions,index,mode):
     try:
         assert bounds(actions)==before
-        assert root.title()==TITLE and 'v0.27.0' in TITLE
+        assert root.title()==TITLE and TITLE.endswith(' v'+__version__)
         result['checks'].append({'mode':mode,'root':[root.winfo_width(),root.winfo_height()],'actions':before,'pinned':True})
         check(index+1)
     except Exception:fail()

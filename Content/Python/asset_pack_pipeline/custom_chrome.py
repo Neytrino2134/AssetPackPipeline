@@ -1,5 +1,6 @@
 """Client title bar; retain Windows sizing, taskbar and system move behavior."""
 import sys
+from pathlib import Path
 from . import __version__
 
 TITLE='MESHFLOW Asset Pack Pipeline v'+__version__
@@ -16,8 +17,14 @@ class WindowChrome:
         self.bar=tk.Frame(root,bg=bg,height=HEIGHT)
         self.bar.pack(side='top',fill='x')
         self.bar.pack_propagate(False)
-        badge=tk.Label(self.bar,text='MF',bg='#3975da',fg='#ffffff',
-                       font=('Segoe UI',12,'bold'),padx=9,pady=5)
+        self.logo=None
+        logo_path=Path(__file__).resolve().parents[3]/'Resources/MeshFlowLogo48.png'
+        try:self.logo=tk.PhotoImage(master=root,file=str(logo_path))
+        except tk.TclError:pass
+        badge=tk.Label(self.bar,image=self.logo if self.logo else '',
+                       text='' if self.logo else 'MF',bg=bg,fg='#ffffff',
+                       font=('Segoe UI',12,'bold'),borderwidth=0,highlightthickness=0)
+        self.badge=badge
         badge.pack(side='left',padx=(18,14))
         text=tk.Frame(self.bar,bg=bg)
         text.pack(side='left',fill='y',pady=(10,10))

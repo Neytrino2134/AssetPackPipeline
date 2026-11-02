@@ -1,7 +1,7 @@
 {
   "FileVersion": 3,
-  "Version": 39,
-  "VersionName": "0.27.0",
+  "Version": 40,
+  "VersionName": "0.27.1",
   "FriendlyName": "Asset Pack Pipeline",
   "Description": "Repeatable FBX/GLB asset pack preparation with explicit LOD chains and reports.",
   "Category": "Editor",

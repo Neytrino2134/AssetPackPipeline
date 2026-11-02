@@ -15,7 +15,8 @@ def record(expected):
     assert not style & 0x00c00000,'Native caption returned'
     assert style & 0x00040000,'Lost native resize frame'
     assert style & 0x00080000,'Lost system menu'
-    assert root.title()=='MESHFLOW Asset Pack Pipeline'
+    from asset_pack_pipeline.custom_chrome import TITLE
+    assert root.title()==TITLE
     from asset_pack_pipeline.custom_chrome import HEIGHT
     assert window.chrome.bar.winfo_height()==HEIGHT
     result['steps'].append({'state':expected,'style':hex(style),'title':root.title()})

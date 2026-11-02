@@ -61,12 +61,11 @@ class GuidedWindow(AssistantWindow, FinalWindow):
         self.guide_summary = tk.Text(review, height=4, bg='#14171d', fg='#bbc7dd', relief='flat', wrap='word',
                                      padx=12, pady=12, state='disabled')
         self.guide_summary.pack(fill='both', expand=True)
-        self.guide_nav = t.Frame(body)
-        self.guide_nav.pack(side='bottom', fill='x', pady=(14, 0))
+        self.guide_nav = t.Frame(self.controls_frame)
         t.Button(self.guide_nav, text='Назад', command=lambda: self.guide_move(-1)).pack(side='left')
         t.Button(self.guide_nav, text='Далее', command=lambda: self.guide_move(1)).pack(side='right')
-        self.guide_actions = t.Frame(body)
-        self.guide_actions.pack(side='bottom', fill='x', pady=10)
+        self.guide_actions = t.Frame(self.controls_frame)
+        self.guide_actions.pack(fill='x',pady=(0,10),before=self.state_label)
         t.Button(self.guide_actions, text='Проверить исходники', command=lambda: self.guide_run(False)).pack(side='left')
         t.Button(self.guide_actions, text='Подготовить меши и сцены', style='Accent.TButton',
                  command=lambda: self.guide_run(True)).pack(side='left', padx=10)
@@ -81,11 +80,14 @@ class GuidedWindow(AssistantWindow, FinalWindow):
         self.tabs.pack_forget()
         self.guided_frame.pack_forget()
         self.expert_actions.pack_forget()
+        self.guide_actions.pack_forget()
+        self.guide_nav.pack_forget()
         if pro:
-            self.tabs.pack(fill='both', expand=True, before=self.controls_frame)
-            self.expert_actions.pack(fill='x')
+            self.tabs.pack(fill='both', expand=True)
+            self.expert_actions.pack(fill='x',before=self.state_label)
         else:
-            self.guided_frame.pack(fill='both', expand=True, before=self.controls_frame)
+            self.guided_frame.pack(fill='both', expand=True)
+            self.guide_actions.pack(fill='x',pady=(0,10),before=self.state_label)
             self.guide_move(0)
 
     def guide_move(self, delta):
@@ -106,7 +108,7 @@ class GuidedWindow(AssistantWindow, FinalWindow):
                 group.grid(row=row, column=column, rowspan=rowspan, columnspan=columnspan, sticky='nsew',
                            padx=(0, 10) if column == 0 and columnspan == 1 else 0, pady=(0, 10))
         if wizard:
-            self.guide_nav.pack(side='bottom', fill='x', pady=10)
+            self.guide_nav.pack(fill='x',pady=(0,10),before=self.guide_actions)
         else:
             self.guide_nav.pack_forget()
         if wizard and self.guide_step == 3:

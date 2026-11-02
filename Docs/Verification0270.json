@@ -1,0 +1,96 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "mode": "Быстрый старт",
+      "root": [
+        1202,
+        860
+      ],
+      "actions": [
+        28,
+        739,
+        1146,
+        33
+      ],
+      "pinned": true
+    },
+    {
+      "mode": "Мастер",
+      "root": [
+        1202,
+        860
+      ],
+      "actions": [
+        28,
+        739,
+        1146,
+        33
+      ],
+      "pinned": true
+    },
+    {
+      "mode": "Профессиональный",
+      "root": [
+        1202,
+        860
+      ],
+      "actions": [
+        28,
+        749,
+        1146,
+        33
+      ],
+      "pinned": true
+    },
+    {
+      "mode": "Быстрый старт",
+      "root": [
+        1102,
+        800
+      ],
+      "actions": [
+        28,
+        679,
+        1046,
+        33
+      ],
+      "pinned": true
+    },
+    {
+      "mode": "Мастер",
+      "root": [
+        1102,
+        800
+      ],
+      "actions": [
+        28,
+        679,
+        1046,
+        33
+      ],
+      "pinned": true
+    },
+    {
+      "mode": "Профессиональный",
+      "root": [
+        1102,
+        800
+      ],
+      "actions": [
+        28,
+        689,
+        1046,
+        33
+      ],
+      "pinned": true
+    }
+  ],
+  "native": {
+    "passed": true,
+    "iterations": 10,
+    "bridge_readonly": true,
+    "tkinter_loaded": false
+  },
+  "unit_tests": 139
+}

@@ -1,7 +1,8 @@
 """Client title bar; retain Windows sizing, taskbar and system move behavior."""
 import sys
+from . import __version__
 
-TITLE='MESHFLOW Asset Pack Pipeline'
+TITLE='MESHFLOW Asset Pack Pipeline v'+__version__
 SUBTITLE='FBX / GLB   →   Static Mesh + LOD   →   Материалы   →   Проверка'
 HEIGHT=64
 

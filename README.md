@@ -1,4 +1,7 @@
-# Asset Pack Pipeline 0.26.0
+# Asset Pack Pipeline 0.27.0
+
+Window and Slate tab titles display the plugin version. Custom UI pins its
+actions, status and progress below scrolling content in all three modes.
 
 Git-free updates: **Tools → Asset Pack Pipeline → Настройки и обновления…**,
 or the update button in Custom UI / Slate. Public GitHub Releases, version and

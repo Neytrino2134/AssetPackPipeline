@@ -132,7 +132,7 @@ class PipelineWindow(GuidedWindow):
         self.external = api_adapter is not None
         self.tk, self.ttk, self.api = tk, ttk, api_adapter if self.external else api
         self.root = tk.Tk(className='AssetPackPipeline')
-        self.root.title(f'Asset Pack Pipeline {__version__}')
+        self.root.title(f'MESHFLOW Asset Pack Pipeline v{__version__}')
         self.root.geometry('1200x860')
         self.root.minsize(1100, 800)
         self.root.configure(bg='#17191e')
@@ -572,14 +572,14 @@ class PipelineWindow(GuidedWindow):
         self.log.configure(yscrollcommand=log_scroll.set)
         controls = t.Frame(shell, padding=(10, 8))
         self.controls_frame = controls
-        controls.pack(fill='x', pady=(10, 0))
+        controls.pack(side='bottom',fill='x',pady=(10,0),before=self.tabs)
         self.state_label = t.Label(controls, text='Готово к настройке', style='Muted.TLabel')
         self.state_label.pack(anchor='w', pady=(0, 5))
         self.progress = t.Progressbar(controls, mode='determinate', maximum=100)
         self.progress.pack(fill='x', pady=(0, 8))
         actions = t.Frame(controls)
         self.expert_actions = actions
-        actions.pack(fill='x')
+        actions.pack(fill='x',before=self.state_label)
         self.action_buttons = []
         for label, action, style in [('Проверить исходники', 'plan', 'TButton'),
                                       ('Запустить импорт', 'start', 'Accent.TButton'),

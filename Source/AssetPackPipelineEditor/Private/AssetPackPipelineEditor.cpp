@@ -1,4 +1,6 @@
 #include "AssetPackPipelineNative.h"
+#include "Interfaces/IPluginManager.h"
+#include "PluginDescriptor.h"
 #include "Modules/ModuleManager.h"
 #include "Framework/Docking/TabManager.h"
 #include "Widgets/Docking/SDockTab.h"
@@ -27,6 +29,11 @@
 #include "Widgets/SWindow.h"
 
 static const FName PipelineTab(TEXT("AssetPackPipelineNative"));
+static FText PipelineTitle()
+{
+    const TSharedPtr<IPlugin> Plugin=IPluginManager::Get().FindPlugin(TEXT("AssetPackPipeline"));
+    return FText::FromString(FString(TEXT("MESHFLOW Asset Pack Pipeline v"))+(Plugin.IsValid()?Plugin->GetDescriptor().VersionName:TEXT("?")));
+}
 static TWeakPtr<SDockTab> LivePipelineTab;
 class SPipelinePanel;
 static TWeakPtr<SPipelinePanel> LivePipelinePanel;
@@ -268,7 +275,7 @@ public:
         ChildSlot[SNew(SScrollBox)+SScrollBox::Slot().Padding(20)[SAssignNew(Form,SVerticalBox)]];
         TSharedPtr<SVerticalBox> Main=Form;
         MainBox=Main;
-        Form->AddSlot().AutoHeight().Padding(0,10)[SNew(STextBlock).Text(FText::FromString(TEXT("MESHFLOW Asset Pack Pipeline"))).Font(FAppStyle::GetFontStyle("HeadingExtraSmall"))];
+        Form->AddSlot().AutoHeight().Padding(0,10)[SNew(STextBlock).Text(PipelineTitle()).Font(FAppStyle::GetFontStyle("HeadingExtraSmall"))];
         Button(TEXT("Настройки и обновления…"),[this](){return Send(TEXT("updates"));});
         for(const TCHAR* Name:{TEXT("Быстрый старт"),TEXT("Мастер"),TEXT("Профессиональный")}) Modes.Add(MakeShared<FString>(Name));
         for(const TCHAR* Name:{TEXT("FBX"),TEXT("GLB")}) Formats.Add(MakeShared<FString>(Name));
@@ -447,7 +454,7 @@ public:
     {
         if (!IsRunningCommandlet()) FGlobalTabmanager::Get()->RegisterNomadTabSpawner(PipelineTab,
             FOnSpawnTab::CreateLambda([](const FSpawnTabArgs&){TSharedRef<SPipelinePanel> Panel=SNew(SPipelinePanel); LivePipelinePanel=Panel; return SNew(SDockTab).TabRole(ETabRole::NomadTab)[Panel];}))
-            .SetDisplayName(FText::FromString(TEXT("MESHFLOW Asset Pack Pipeline"))).SetMenuType(ETabSpawnerMenuType::Hidden);
+            .SetDisplayName(PipelineTitle()).SetMenuType(ETabSpawnerMenuType::Hidden);
     }
     virtual void ShutdownModule() override
     {

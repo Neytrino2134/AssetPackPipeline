@@ -31,6 +31,10 @@ class CustomWindow(PipelineWindow):
         self.chrome=WindowChrome(self.root,self.close)
         super()._build()
 
+    def open_updates(self):
+        from . import updater
+        updater.launch(self.config['update_context'])
+
     def heartbeat(self):
         if self.closed:return
         now=time.monotonic()
@@ -60,6 +64,13 @@ class CustomWindow(PipelineWindow):
         if self.closed:return
         try:
             self.ai_settings_poll();self.ai_poll()
+            if time.monotonic()-getattr(self,'_update_notice_time',0)>2:
+                from . import updater
+                self._update_notice_time=time.monotonic()
+                notice=updater.cached({'saved':str(self.saved)})
+                caption='Доступно '+notice['manifest']['version'] if notice.get('status')=='available' else 'Обновления…'
+                if caption!=getattr(self,'_update_caption',None):
+                    self.update_button.configure(text=caption);self._update_caption=caption
             snapshot=self.api.snapshot()
             self._poll()
             remote=snapshot.get('guided')

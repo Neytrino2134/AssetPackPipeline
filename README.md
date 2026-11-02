@@ -1,4 +1,9 @@
-# Asset Pack Pipeline 0.25.3
+# Asset Pack Pipeline 0.26.0
+
+Git-free updates: **Tools → Asset Pack Pipeline → Настройки и обновления…**,
+or the update button in Custom UI / Slate. Public GitHub Releases, version and
+engine BuildId checks, SHA256 validation, post-editor installation and backup.
+See [update setup and release publishing](Docs/Updates0260.md).
 
 Overview and individual stills share camera-side key lighting (Pitch 225 degrees,
 Yaw 60 degrees in the default front view), rotating with individual view changes.

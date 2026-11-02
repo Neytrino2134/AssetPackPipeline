@@ -269,6 +269,7 @@ public:
         TSharedPtr<SVerticalBox> Main=Form;
         MainBox=Main;
         Form->AddSlot().AutoHeight().Padding(0,10)[SNew(STextBlock).Text(FText::FromString(TEXT("MESHFLOW Asset Pack Pipeline"))).Font(FAppStyle::GetFontStyle("HeadingExtraSmall"))];
+        Button(TEXT("Настройки и обновления…"),[this](){return Send(TEXT("updates"));});
         for(const TCHAR* Name:{TEXT("Быстрый старт"),TEXT("Мастер"),TEXT("Профессиональный")}) Modes.Add(MakeShared<FString>(Name));
         for(const TCHAR* Name:{TEXT("FBX"),TEXT("GLB")}) Formats.Add(MakeShared<FString>(Name));
         for(const TCHAR* Name:{TEXT("gpt-6.1-sol"),TEXT("gpt-6-astra"),TEXT("gpt-6.1-terra"),TEXT("gpt-6-luna")}) Models.Add(MakeShared<FString>(Name));

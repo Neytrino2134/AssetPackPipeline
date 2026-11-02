@@ -1,0 +1,40 @@
+{
+  "version": "0.26.0",
+  "date": "2026-11-02",
+  "unit_tests": 139,
+  "build": "passed",
+  "native": {
+    "passed": true,
+    "context": {
+      "target": "D:\\Documents\\Unreal Projects\\MCP_Setup_Projects\\Saved\\NativePackage0260\\HostProject\\Plugins\\AssetPackPipeline",
+      "saved": "D:\\Documents\\Unreal Projects\\MCP_Setup_Projects\\Saved\\NativePackage0260\\HostProject\\Saved\\AssetPackPipeline",
+      "python": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\ThirdParty\\Python3\\Win64\\python.exe",
+      "engine_pid": 38076,
+      "engine_version": "5.8.4",
+      "build_id": "55116800"
+    },
+    "native_lifecycle": true,
+    "unreal_tkinter_loaded": false
+  },
+  "external_ui": {
+    "passed": true,
+    "buttons": 3,
+    "unreal_loaded": false,
+    "simulated_release": true,
+    "width": 780,
+    "height": 540
+  },
+  "public_github": "no_release",
+  "note": "Installer uses real plugin ZIPs and a simulated editor lifetime process; no published remote download yet",
+  "installer": {
+    "status": "installed",
+    "version": "0.26.0",
+    "backup": "D:\\Documents\\Unreal Projects\\MCP_Setup_Projects\\Saved\\UpdaterProcessSmoke\\cab756526fe54ec68903372949e8abc0\\HostProject\\Saved\\AssetPackPipeline\\Updates\\jobs\\smoke\\backup",
+    "message": "Обновление установлено. Можно открыть проект Unreal.",
+    "passed": true,
+    "waited_for_process_exit": true,
+    "real_package": true,
+    "simulated_editor_process": true,
+    "project_content_untouched": true
+  }
+}

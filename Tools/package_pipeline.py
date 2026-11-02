@@ -3,9 +3,11 @@ from pathlib import Path
 import json
 from zipfile import ZipFile, ZIP_DEFLATED
 import argparse
+import hashlib
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--binary-source', type=Path)
+parser.add_argument('--engine-version',default='5.8.4')
 args = parser.parse_args()
 
 project = Path(__file__).resolve().parents[3]
@@ -32,3 +34,10 @@ with ZipFile(output) as archive:
     assert archive.testzip() is None
     assert 'AssetPackPipeline/AssetPackPipeline.uplugin' in archive.namelist()
 print(output)
+with ZipFile(output) as archive:
+    modules=json.loads(archive.read('AssetPackPipeline/Binaries/Win64/UnrealEditor.modules'))
+metadata={'schema_version':1,'version':version,'engine_version':args.engine_version,'platform':'Win64',
+          'build_id':modules['BuildId'],'archive':output.name,'sha256':hashlib.sha256(output.read_bytes()).hexdigest()}
+manifest=output.parent/'AssetPackPipeline-update.json'
+manifest.write_text(json.dumps(metadata,indent=2),encoding='utf-8')
+print(manifest)

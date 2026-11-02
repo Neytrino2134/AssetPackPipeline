@@ -21,3 +21,6 @@ def register():
             unreal.log_warning('AssetPackPipeline: MCP adapter unavailable; manual mode remains available')
     from . import __version__
     unreal.log(f'AssetPackPipeline {__version__} initialized')
+    if '-unattended' not in unreal.SystemLibrary.get_command_line().lower() and '-run=' not in unreal.SystemLibrary.get_command_line().lower():
+        from . import updater
+        updater.startup()

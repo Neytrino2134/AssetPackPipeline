@@ -189,6 +189,8 @@ def launch(test_plan=None):
         return {'already_open':True,'pid':_process.pid}
     _close_orphan()
     config=start()
+    from . import updater
+    config['update_context']=updater.engine_context()
     (directory()/'client-status.json').unlink(missing_ok=True)
     if test_plan:config['probe_plan']=test_plan
     python=Path(unreal.Paths.engine_dir()).resolve()/'Binaries/ThirdParty/Python3/Win64/python.exe'

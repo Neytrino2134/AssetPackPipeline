@@ -23,6 +23,11 @@ def open_custom_window():
     return custom_server.launch()
 
 
+def open_updates():
+    from . import updater
+    updater.launch()
+
+
 def invoke(action):
     try:
         if action == 'readiness':
@@ -59,6 +64,12 @@ def register():
     entry.set_string_command(unreal.ToolMenuStringCommandType.PYTHON, '',
                              'from asset_pack_pipeline import ui; ui.open_window()')
     menu.add_menu_entry('Window', entry)
+    update_entry=unreal.ToolMenuEntry(name='AssetPackPipeline.Updates',type=unreal.MultiBlockType.MENU_ENTRY)
+    from . import updater
+    notice=updater.cached({'saved':str(Path(unreal.Paths.project_saved_dir()).resolve()/'AssetPackPipeline')})
+    update_entry.set_label(notice['message']+'…' if notice.get('status')=='available' else 'Настройки и обновления…')
+    update_entry.set_string_command(unreal.ToolMenuStringCommandType.PYTHON,'','from asset_pack_pipeline import ui; ui.open_updates()')
+    menu.add_menu_entry('Window',update_entry)
     for action, label in [('readiness', 'Readiness'), ('plan', 'Scan and Plan'),
                           ('start', 'Run Import + Materials + LODs'),
                           ('status', 'Current Job Status'), ('cancel', 'Cancel at Next Asset'),

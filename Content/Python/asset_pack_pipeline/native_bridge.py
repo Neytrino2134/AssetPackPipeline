@@ -177,6 +177,10 @@ def submit_b64(encoded):
     try:
         data = json.loads(base64.b64decode(encoded).decode('utf-8'))
         action = data['action']
+        if action=='updates':
+            from . import ui
+            ui.open_updates()
+            return
         if action in ('ai_approve','ai_reject'):
             decide_ai(action=='ai_approve')
             return

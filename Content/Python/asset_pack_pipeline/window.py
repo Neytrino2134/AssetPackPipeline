@@ -296,6 +296,8 @@ class PipelineWindow(GuidedWindow):
         bar.pack(fill='x', pady=(0, 10))
         self.profile_label = t.Label(bar, text='Профиль', style='Muted.TLabel')
         self.profile_label.pack(side='left', fill='x', expand=True)
+        self.update_button=t.Button(bar, text='Обновления…', command=self.open_updates)
+        self.update_button.pack(side='left',padx=6)
         t.Button(bar, text='Настройки AI…', command=self.open_ai_settings).pack(side='left', padx=6)
         t.Button(bar, text='Сканировать Content…', command=self.scan_content).pack(side='left', padx=6)
         for title, callback in [('Загрузить…', self.browse_profile), ('Сохранить', self.save_profile),
@@ -930,6 +932,10 @@ class PipelineWindow(GuidedWindow):
         finally:
             self.in_action = False
             self._buttons(bool(self.api.readiness()['active_run']))
+
+    def open_updates(self):
+        from . import ui
+        ui.open_updates()
 
     def _buttons(self, running):
         for button in self.action_buttons + self.scene_buttons + self.diagnostic_buttons + self.preview_buttons + self.delivery_buttons + [self.settings_button,self.media_button,self.auto_lod_button,self.flythrough_button,self.flythrough_open_button]:

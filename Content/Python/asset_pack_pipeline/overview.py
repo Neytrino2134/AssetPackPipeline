@@ -6,6 +6,11 @@ import shutil
 from pathlib import Path
 
 
+def backdrop_floor_size(width, depth, camera_distance):
+    """A cheap cube, at least 2 km wide, well beyond both camera frusta."""
+    return max(200000.0, 20.0*max(width, depth, camera_distance))
+
+
 def settings(profile, lod_review=False):
     if lod_review and profile.get('nanite_enabled', False):
         raise ValueError('Forced LOD review requires Nanite OFF; use the overview for Nanite meshes')
@@ -229,8 +234,6 @@ def build(manifest, backup_folder, lod_review=False):
     floor = _spawn(existing, profile, 'Floor', u.StaticMeshActor, [0, 0, -5])
     floor.static_mesh_component.set_static_mesh(u.load_asset('/Engine/BasicShapes/Cube'))
     floor.static_mesh_component.set_material(0, _floor_material(profile))
-    floor.set_actor_scale3d(u.Vector((planned['width'] + config['spacing'])/100,
-                                    (planned['depth'] + config['spacing'])/100, 0.1))
     light = _spawn(existing, profile, 'KeyLight', u.DirectionalLight, [0, 0, planned['height'] + 300],
                    u.Rotator(pitch=-45, yaw=60, roll=0))
     component = light.get_component_by_class(u.DirectionalLightComponent)
@@ -271,6 +274,8 @@ def build(manifest, backup_folder, lod_review=False):
         camera.camera_component.set_editor_property('field_of_view', 50.0)
         camera.camera_component.set_editor_property('aspect_ratio', 16/9)
         cameras.append(camera)
+    side = backdrop_floor_size(planned['width']+config['spacing'], planned['depth']+config['spacing'], distance)
+    floor.set_actor_scale3d(u.Vector(side/100, side/100, 0.1))
     for key in set(existing) - expected_keys:
         actor = existing[key]
         if any(_owner(profile) not in [str(t) for t in child.tags] for child in actor.get_attached_actors()):
@@ -303,10 +308,31 @@ def open_map(manifest, lod_review=False):
     les = u.get_editor_subsystem(u.LevelEditorSubsystem)
     if _current()[1] != path and not les.load_level(path):
         raise RuntimeError(f'Could not load overview: {path}')
+    # Upgrade owned maps made by older versions, including render-only runs.
+    ensure_backdrop_floor(manifest, lod_review)
     camera = _actors(manifest['profile']).get('Camera_Overview')
     if camera:
         les.pilot_level_actor(camera)
     return {'map_path': path, 'opened': True}
+
+
+def ensure_backdrop_floor(manifest, lod_review=False):
+    u = _engine()
+    actors = _actors(manifest['profile'])
+    floor = actors.get('Floor')
+    if not floor:
+        raise RuntimeError('Overview floor is missing; regenerate the scene')
+    positions = [actor.get_actor_location() for key,actor in actors.items()
+                 if key in ('Camera_Overview','Camera_Detail')]
+    distance = max((math.sqrt(p.x*p.x+p.y*p.y+p.z*p.z) for p in positions),default=0)
+    side = backdrop_floor_size(0, 0, distance)
+    scale = floor.get_actor_scale3d()
+    if scale.x*100+1 >= side and scale.y*100+1 >= side:return False
+    floor.modify()
+    floor.set_actor_scale3d(u.Vector(max(scale.x,side/100),max(scale.y,side/100),scale.z))
+    if not u.get_editor_subsystem(u.LevelEditorSubsystem).save_current_level():
+        raise RuntimeError('Could not save enlarged overview floor')
+    return True
 
 
 def validate_current(manifest, lod_review=False):

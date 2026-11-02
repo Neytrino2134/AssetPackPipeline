@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "old_scale": "<Struct 'Vector' (0x00000203E3567A80) {x: 10.000000, y: 10.000000, z: 0.100000}>",
+  "new_scale": "<Struct 'Vector' (0x00000203E360F4E0) {x: 2000.000000, y: 2000.000000, z: 0.100000}>",
+  "width_cm": 200000.0,
+  "depth_cm": 200000.0,
+  "frustum_hits": 24,
+  "cameras_and_meshes_unchanged": true
+}

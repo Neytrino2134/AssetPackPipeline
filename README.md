@@ -1,4 +1,7 @@
-# Asset Pack Pipeline 0.25.1
+# Asset Pack Pipeline 0.25.2
+
+Overview scenes use a ground backdrop at least 2 km wide, extending beyond the
+cameras. Older owned overview maps upgrade their floor on opening through the pipeline.
 
 Final exports use `FinalProject/YYYY-MM-DD_HH-MM-SS/Pack_Project` and
 `Pack_Renders`, with separate ZIPs and universal image filenames.

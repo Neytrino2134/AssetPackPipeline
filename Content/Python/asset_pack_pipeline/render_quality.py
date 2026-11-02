@@ -18,6 +18,21 @@ CVARS = {
 
 _saved = None
 _saved_throttle = None
+_saved_view_mode = None
+
+def select_view(mode='lit'):
+    """Save once per job, enforce and read back the active viewport mode."""
+    global _saved_view_mode
+    import unreal as u
+    from .render_views import MODES
+    desired=getattr(u.ViewModeIndex,MODES[mode][0])
+    if _saved_view_mode is None:
+        _saved_view_mode=u.AutomationLibrary.get_editor_active_viewport_view_mode()
+    if u.AutomationLibrary.get_editor_active_viewport_view_mode()!=desired:
+        u.AutomationLibrary.set_editor_active_viewport_view_mode(desired)
+    actual=u.AutomationLibrary.get_editor_active_viewport_view_mode()
+    if actual!=desired:raise RuntimeError('Could not set viewport render mode: '+mode)
+    return str(actual)
 
 
 THROTTLE_PROPERTY = 'bThrottleCPUWhenNotForeground'
@@ -92,7 +107,12 @@ def apply():
 
 
 def restore():
-    global _saved, _saved_throttle
+    global _saved, _saved_throttle, _saved_view_mode
+    if _saved_view_mode is not None:
+        import unreal as u
+        original=_saved_view_mode
+        u.AutomationLibrary.set_editor_active_viewport_view_mode(original)
+        _saved_view_mode=None
     if _saved_throttle is not None:
         import unreal as u
         try:

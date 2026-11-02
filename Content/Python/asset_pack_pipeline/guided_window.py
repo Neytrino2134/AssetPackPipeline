@@ -30,6 +30,7 @@ class GuidedWindow(AssistantWindow, FinalWindow):
         self.guide_finalize = tk.BooleanVar(value=True)
         self.guide_renders = {name: tk.BooleanVar(value=name == 'overview')
                               for name in ('overview', 'MID', 'LOW', 'LODS', 'selected')}
+        self.guide_view_modes={name:tk.BooleanVar(value=False) for name in ('wireframe','collision_visibility','collision_pawn')}
         # Quick start: 1 and 2 stacked left, 3 on the right, 4 full width below.
         self.guide_grid = t.Frame(body)
         self.guide_grid.pack(fill='x')
@@ -49,9 +50,18 @@ class GuidedWindow(AssistantWindow, FinalWindow):
         t.Label(meshes, text='Какие версии подготовить?').pack(side='left', padx=(0, 18))
         t.Combobox(meshes, textvariable=self.guide_variants, state='readonly', width=28,
                    values=('LOD + MID / Nanite', 'Только LOD', 'Только MID / Nanite')).pack(side='left')
+        columns=t.Frame(renders);columns.pack(fill='x')
+        columns.columnconfigure((0,1),weight=1,uniform='render')
+        image_choices=t.Frame(columns);image_choices.grid(row=0,column=0,sticky='nw',padx=(0,10))
+        mode_choices=t.Frame(columns);mode_choices.grid(row=0,column=1,sticky='nw')
+        t.Label(image_choices,text='Изображения').pack(anchor='w',pady=(0,6))
+        t.Label(mode_choices,text='Варианты').pack(anchor='w',pady=(0,6))
+        t.Label(mode_choices,text='С освещением — всегда',style='Muted.TLabel').pack(anchor='w',pady=3)
+        for name,label in (('wireframe','Каркасное'),('collision_visibility','Коллизия объекта'),('collision_pawn','Коллизия игрока')):
+            t.Checkbutton(mode_choices,text=label,variable=self.guide_view_modes[name]).pack(anchor='w',pady=3)
         for key, label in (('overview', 'Один общий кадр'), ('MID', 'Каждый MID'), ('LOW', 'Каждый LOW (LOD0)'),
                            ('LODS', 'Каждый LOD'), ('selected', 'Один выбранный LOD у каждой модели')):
-            t.Checkbutton(renders, text=label, variable=self.guide_renders[key]).pack(anchor='w', pady=3)
+            t.Checkbutton(image_choices, text=label, variable=self.guide_renders[key]).pack(anchor='w', pady=3)
         line = t.Frame(renders)
         line.pack(fill='x', pady=(8, 0))
         t.Label(line, text='Номер выбранного LOD (0 — самый подробный):').pack(side='left')
@@ -132,7 +142,8 @@ class GuidedWindow(AssistantWindow, FinalWindow):
         return guided.prepare(self.base, self.variables['source_root'].get(), self.variables['pack_id'].get().strip(),
                               self.variables['source_format'].get(), variants[self.guide_variants.get()],
                               [k for k, v in self.guide_renders.items() if v.get()], int(self.guide_lod.get()),
-                              self.guide_finalize.get(), self.variables['delivery_output_directory'].get().strip())
+                              self.guide_finalize.get(), self.variables['delivery_output_directory'].get().strip(),
+                              view_modes=[name for name,value in self.guide_view_modes.items() if value.get()])
 
     def guide_run(self, start, raise_errors=False):
         try:

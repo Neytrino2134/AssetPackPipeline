@@ -24,6 +24,9 @@ def check(index=0):
                     x,y,w,h=bounds(widget)
                     assert widget.winfo_ismapped() and y>=0 and y+h<=root.winfo_height(),(mode,bounds(widget))
                 before=bounds(actions)
+                if mode=='Быстрый старт':
+                    group=window.guide_groups[2]
+                    assert group.winfo_rootx()-root.winfo_rootx()+group.winfo_width()<=root.winfo_width(), 'Render options exceed window width'
                 if mode!='Профессиональный':
                     window.guided_frame.canvas.yview_moveto(1)
                 else:

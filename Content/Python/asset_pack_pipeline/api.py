@@ -605,6 +605,8 @@ def start_previews(profile_path):
     rows = [{'id': 'lod_review' if lod else 'overview', 'lod_review': lod, 'status': 'pending',
              'map_path': overview.settings(manifest['profile'], lod)['map_path'],
              'output_path': str(folder / (('lod_review' if lod else 'overview')+'.png'))} for lod in modes]
+    from . import render_views
+    rows=render_views.expand(rows,config['view_modes'])
     report = {'schema_version': 1, 'run_id': run_id, 'kind': 'preview_export', 'status': 'running',
               'plugin_version': __version__, 'engine_version': readiness()['engine_version'],
               'manifest': manifest, 'preview_settings': config, 'assets': rows,
@@ -630,6 +632,8 @@ def start_media(profile_path, automatic_lod=False):
     config=media.settings(manifest['profile']);capture=previews.settings(manifest['profile'])
     checks=[runtime.inspect(manifest,asset) for asset in manifest['assets']]
     if automatic_lod:
+        if capture['view_modes']!=['lit']:
+            raise ValueError('Automatic LOD telemetry requires only Lit; use ordinary renders for wireframe/collision')
         if manifest['profile'].get('nanite_enabled', False):
             raise ValueError('Automatic conventional LOD review requires Nanite OFF')
         from . import auto_lod

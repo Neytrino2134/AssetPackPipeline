@@ -329,7 +329,8 @@ def submit_b64(encoded):
             renders = [r for r in ('MID','LOW','LODS','selected') if data.get('render_'+r,False)]
             if data['render']: renders.append('overview')
             profiles, steps = guided.prepare(base,data['source'],data['pack'],data['format'].upper(),variants,
-                renders,lod=int(data.get('selected_lod',0)),finalize=data['zip'],output=data['output'])
+                renders,lod=int(data.get('selected_lod',0)),finalize=data['zip'],output=data['output'],
+                view_modes=[mode for mode in ('wireframe','collision_visibility','collision_pawn') if data.get('view_'+mode,False)])
             if professional:
                 for profile in profiles.values():
                     profile['destination_root'] = base['destination_root']

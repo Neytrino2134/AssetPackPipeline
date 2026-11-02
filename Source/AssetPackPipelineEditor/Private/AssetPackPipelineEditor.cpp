@@ -61,6 +61,7 @@ public:
     TSharedPtr<STextBlock> Status;
     bool bMID=true, bLOD=true, bRender=true, bZip=true;
     bool bRenderMID=false, bRenderLOW=false, bRenderLODS=false, bRenderSelected=false, bRemember=false;
+    bool bWireframe=false,bCollisionVisibility=false,bCollisionPawn=false;
     FString State;
     bool Exercise(int32 Index)
     {
@@ -171,6 +172,7 @@ public:
         Data->SetStringField(TEXT("selected_lod"),SelectedLOD->GetText().ToString());
         Data->SetBoolField(TEXT("render_MID"),bRenderMID); Data->SetBoolField(TEXT("render_LOW"),bRenderLOW);
         Data->SetBoolField(TEXT("render_LODS"),bRenderLODS); Data->SetBoolField(TEXT("render_selected"),bRenderSelected);
+        Data->SetBoolField(TEXT("view_wireframe"),bWireframe);Data->SetBoolField(TEXT("view_collision_visibility"),bCollisionVisibility);Data->SetBoolField(TEXT("view_collision_pawn"),bCollisionPawn);
         Data->SetBoolField(TEXT("remember"),bRemember);
         if(Action==TEXT("ai_save") && !Key->GetText().IsEmpty())
         {
@@ -325,6 +327,9 @@ public:
 
         Section(TEXT("Рендер и предметные кадры"),2,false);
         Check(TEXT("Один общий кадр"),bRender);
+        Check(TEXT("Дополнительно: каркасное"),bWireframe);
+        Check(TEXT("Дополнительно: коллизия объекта"),bCollisionVisibility);
+        Check(TEXT("Дополнительно: коллизия игрока"),bCollisionPawn);
         Only([this](){return !IsQuick();});
         Check(TEXT("Каждый MID"),bRenderMID); Check(TEXT("Каждый LOW / LOD0"),bRenderLOW);
         Check(TEXT("Каждый LOD"),bRenderLODS); Check(TEXT("Один выбранный LOD каждой модели"),bRenderSelected);

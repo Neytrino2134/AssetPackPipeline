@@ -1,4 +1,9 @@
-# Asset Pack Pipeline 0.27.1
+# Asset Pack Pipeline 0.28.0
+
+Still renders explicitly select Lit, regardless of the editor viewport mode.
+Quick Start adds optional Wireframe, Visibility Collision and Player Collision
+images in a second options column; suffixes distinguish the outputs.
+The original viewport mode is restored after the job. See [render modes](Docs/RenderViews0280.md).
 
 Custom UI uses the transparent cyan/purple MeshFlow logo in its title bar and
 window icon. Agent release publication uploads and verifies both update assets.

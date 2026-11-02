@@ -43,7 +43,7 @@ class MediaTests(unittest.TestCase):
         self.assertEqual([r['lod_index'] for r in rows[:5]],[0,1,2,3,4])
         config=media.settings({'lod_screen_sizes':[1,.5],'media':{'lod_index':1}})
         self.assertEqual(config['lod_indices'],[1])
-        self.assertTrue(media.frame_rows([{'id':'Mesh'}],[{'passed':False}],config,Path('out'),'Studio')[0]['output_path'].endswith('Mesh_diagnostic_v00.png'))
+        self.assertTrue(media.frame_rows([{'id':'Mesh'}],[{'passed':False}],config,Path('out'),'Studio')[0]['output_path'].endswith('Mesh_diagnostic_v00_Lit.png'))
 
     def test_review_only_includes_completed_local_frames_and_escapes_names(self):
         with tempfile.TemporaryDirectory() as folder:

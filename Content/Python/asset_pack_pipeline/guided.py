@@ -4,7 +4,9 @@ import re
 from pathlib import Path
 
 
-def prepare(base, source, pack, fmt, variants='both', renders=(), lod=0, finalize=False, output=''):
+def prepare(base, source, pack, fmt, variants='both', renders=(), lod=0, finalize=False, output='', view_modes=()):
+    from . import render_views
+    view_modes=render_views.settings(view_modes)
     if not Path(source).is_dir():
         raise ValueError('Выберите существующую папку исходников.')
     if not re.fullmatch(r'[A-Za-z][A-Za-z0-9_]*', pack):
@@ -31,7 +33,7 @@ def prepare(base, source, pack, fmt, variants='both', renders=(), lod=0, finaliz
         p['overview'] = dict(p.get('overview', {}), map_name='Overview_'+pack+'_'+variant)
         p['overview'].pop('map_path_override', None)
         p.pop('asset_ids', None)
-        p['previews'] = dict(p.get('previews', {}), mode='overview', camera='overview')
+        p['previews'] = dict(p.get('previews', {}), mode='overview', camera='overview',view_modes=view_modes)
         p['delivery'] = dict(p.get('delivery', {}), maps='overview', output_directory=output)
         indices = sorted(({0} if 'LOW' in renders else set()) |
                          (set(range(len(p['lod_screen_sizes']))) if 'LODS' in renders else set()) |

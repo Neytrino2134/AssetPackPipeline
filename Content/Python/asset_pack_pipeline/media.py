@@ -6,8 +6,10 @@ from . import previews
 
 
 def settings(profile):
+    from . import render_views
     profile = dict(profile, lod_screen_sizes=[1.0]) if profile.get('nanite_enabled', False) else profile
     value=dict(profile.get('media',{}))
+    value['view_modes']=render_views.settings(profile.get('previews',{}).get('view_modes'))
     value.setdefault('yaw_angles',[90,120])
     # Upgrade shipped rear-facing presets; other explicit views remain custom.
     if value['yaw_angles'] == [-60,120]:value['yaw_angles']=[90,120]
@@ -45,7 +47,8 @@ def frame_rows(assets,checks,config,folder,studio):
                 rows.append({'id':asset['id']+suffix,'asset_id':asset['id'],'yaw':angle,'view_index':i,
                     'lod_index':lod,'status':'pending','map_path':studio,
                     'output_path':str(Path(folder)/(asset['id']+('_diagnostic' if not check.get('strict_passed',check['passed']) else '')+suffix+'.png'))})
-    return rows
+    from . import render_views
+    return render_views.expand(rows,config.get('view_modes'))
 
 
 def _backdrop(actors,profile,studio):
@@ -122,7 +125,9 @@ def advance(report,state):
         render_quality.restore()
         return True
     config=report['media_settings'];capture=report['preview_settings'];now=time.monotonic()
+    if 'task' in state:render_quality.select_view(row.get('render_view','lit'))
     if row['status']=='pending':
+        render_quality.select_view(row.get('render_view','lit'))
         asset=next(a for a in report['manifest']['assets'] if a['id']==row['asset_id'])
         check=next(a for a in report['source_asset_checks'] if a['id']==row['asset_id'])
         manifest=copy.deepcopy(report['manifest'])
@@ -167,9 +172,6 @@ def advance(report,state):
         actors['Floor'].set_actor_scale3d(u.Vector(1000,1000,.1))
         _backdrop(actors,manifest['profile'],row['map_path'])
         if report.get('automatic_lod_review'):
-            mode=u.ViewModeIndex.VMI_LIT
-            state.setdefault('original_view_mode',u.AutomationLibrary.get_editor_active_viewport_view_mode())
-            u.AutomationLibrary.set_editor_active_viewport_view_mode(mode)
             for key in ('Floor','StudioBackdrop'):
                 actors[key].set_actor_hidden_in_game(row['capture_mode']=='lod_color')
                 actors[key].set_is_temporarily_hidden_in_editor(row['capture_mode']=='lod_color')
@@ -205,10 +207,12 @@ def advance(report,state):
             try:row['collision_audit']=collision_audit(camera,actors['Mesh_'+row['asset_id']],actors['Floor'],row['collision_expected'])
             except Exception as error:row['collision_audit']={'passed':False,'unverified':True,'error':str(error)}
         if not row['collision_audit']['passed']:raise RuntimeError('Studio collision audit failed: '+str(row['collision_audit']))
+        row['viewport_mode_verified']=render_quality.select_view(row.get('render_view','lit'))
         task=u.AutomationLibrary.take_high_res_screenshot(capture['width'],capture['height'],row['output_path'],camera,delay=1,
             force_game_view=not(report.get('automatic_lod_review') and row['capture_mode']=='lod_color'))
         if not task or not task.is_valid_task():raise RuntimeError('Unreal rejected media screenshot')
         state['task']=task
+        render_quality.select_view(row.get('render_view','lit'))
         return False
     if not state['task'].is_task_done():
         if now-state['started']>capture['timeout_seconds']+previews.STALL_GRACE_SECONDS:raise RuntimeError(previews.STALL_MESSAGE)

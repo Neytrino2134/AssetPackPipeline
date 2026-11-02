@@ -14,7 +14,9 @@ STALL_MESSAGE = ('Unreal не отрисовал снимок. Разверни�
 
 
 def settings(profile):
+    from . import render_views
     config = dict(profile.get('previews', {}))
+    config['view_modes']=render_views.settings(config.get('view_modes'))
     for key, default in [('width', 1920), ('height', 1080)]:
         value = config.get(key, default)
         if isinstance(value, bool) or not isinstance(value, int) or not 256 <= value <= 8192:
@@ -68,7 +70,9 @@ def advance(report, state):
         render_quality.restore()
         return True
     now = time.monotonic()
+    if 'task' in state:render_quality.select_view(item.get('render_view','lit'))
     if item['status'] == 'pending':
+        render_quality.select_view(item.get('render_view','lit'))
         overview.open_map(report['manifest'], item['lod_review'])
         validation = overview.validate_current(report['manifest'], item['lod_review'])
         if not validation['passed']:
@@ -94,11 +98,13 @@ def advance(report, state):
         camera = actors.get('Camera_'+config['camera'].title())
         if camera is None:
             raise RuntimeError('Requested preview camera is missing')
+        item['viewport_mode_verified']=render_quality.select_view(item.get('render_view','lit'))
         task = u.AutomationLibrary.take_high_res_screenshot(
             config['width'], config['height'], item['output_path'], camera, delay=1)
         if not task or not task.is_valid_task():
             raise RuntimeError('Unreal rejected screenshot task; an interactive RHI viewport is required')
         state['task'] = task
+        render_quality.select_view(item.get('render_view','lit'))
         return False
     if not state['task'].is_task_done():
         if now-state['started'] > config['timeout_seconds']+STALL_GRACE_SECONDS:

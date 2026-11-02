@@ -58,6 +58,9 @@ def export_renders(reports, destination, pack_name='AssetPack'):
                 if asset.get('view_index',0)>0:name+=f"_View_{asset['view_index']+1:02d}"
             else:
                 name='Overview_LODs' if asset.get('lod_review') else 'Overview_All_Meshes'
+            if 'render_view' in asset:
+                from .render_views import suffix
+                name+=suffix(asset['render_view'])
             unique=name;index=2
             while unique.casefold() in names:
                 unique=f'{name}_{index:02d}';index+=1

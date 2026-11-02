@@ -1,0 +1,80 @@
+{
+  "passed": true,
+  "meshes": [
+    {
+      "path": "/Game/CollisionRegression/Stone.Stone",
+      "simple_collision_count": 8,
+      "collision_shape_counts": {
+        "box_elems": 0,
+        "sphere_elems": 0,
+        "sphyl_elems": 0,
+        "convex_elems": 8
+      },
+      "collision_mode": "convex",
+      "primitive_collision_count": 0,
+      "convex_collision_count": 8,
+      "collision_complexity": "<CollisionTraceFlag.CTF_USE_SIMPLE_AND_COMPLEX: 1>",
+      "collision_count_ok": true,
+      "collision_complexity_ok": true
+    },
+    {
+      "path": "/Game/CollisionRegression/TestMID.TestMID",
+      "simple_collision_count": 1,
+      "collision_shape_counts": {
+        "box_elems": 0,
+        "sphere_elems": 0,
+        "sphyl_elems": 0,
+        "convex_elems": 1
+      },
+      "collision_mode": "convex",
+      "primitive_collision_count": 0,
+      "convex_collision_count": 1,
+      "collision_complexity": "<CollisionTraceFlag.CTF_USE_SIMPLE_AND_COMPLEX: 1>",
+      "collision_count_ok": true,
+      "collision_complexity_ok": true
+    },
+    {
+      "path": "/Game/CollisionRegression/TestLODS.TestLODS",
+      "simple_collision_count": 1,
+      "collision_shape_counts": {
+        "box_elems": 0,
+        "sphere_elems": 0,
+        "sphyl_elems": 0,
+        "convex_elems": 1
+      },
+      "collision_mode": "convex",
+      "primitive_collision_count": 0,
+      "convex_collision_count": 1,
+      "collision_complexity": "<CollisionTraceFlag.CTF_USE_SIMPLE_AND_COMPLEX: 1>",
+      "collision_count_ok": true,
+      "collision_complexity_ok": true
+    }
+  ],
+  "capsule_sweep_blocked": true,
+  "pawn_response": "<CollisionResponseType.ECR_BLOCK: 2>",
+  "render_collision_audit": {
+    "simple_collision_traces": [
+      {
+        "axis": "X",
+        "blocking_hit": true,
+        "expected_actor": true,
+        "hit_actor": "/Temp/Untitled_1.Untitled:PersistentLevel.StaticMeshActor_0"
+      },
+      {
+        "axis": "Y",
+        "blocking_hit": true,
+        "expected_actor": true,
+        "hit_actor": "/Temp/Untitled_1.Untitled:PersistentLevel.StaticMeshActor_0"
+      },
+      {
+        "axis": "Z",
+        "blocking_hit": true,
+        "expected_actor": true,
+        "hit_actor": "/Temp/Untitled_1.Untitled:PersistentLevel.StaticMeshActor_0"
+      }
+    ],
+    "expected_blocking": true,
+    "probe": "convex_hull_centroid",
+    "passed": true
+  }
+}

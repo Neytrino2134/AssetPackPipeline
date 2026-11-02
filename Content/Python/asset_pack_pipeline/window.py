@@ -38,6 +38,9 @@ def profile_from_fields(base, values):
     if not profile['source_root']:
         raise ValueError('Выберите папку с экспортами.')
     profile.update(lod_screen_sizes=sizes, roughness=roughness)
+    if 'convex_hull_count' in values:
+        profile['convex_collision']={'hull_count':int(values['convex_hull_count']),
+            'max_hull_verts':int(values['convex_max_hull_verts']),'precision':int(values['convex_precision'])}
     for key in ('nanite_enabled', 'nanite_source'):
         if key in values:
             profile[key] = values[key]
@@ -374,18 +377,21 @@ class PipelineWindow(GuidedWindow):
         self.settings_button.grid(row=7, column=0, columnspan=3, sticky='w', padx=12, pady=8)
         meshes = t.LabelFrame(materials, text='  Настройки меша  ')
         meshes.pack(fill='x')
-        self._field(meshes, 0, 'collision', 'Простая коллизия', 'box', ['none', 'box'])
+        self._field(meshes, 0, 'collision', 'Простая коллизия', 'convex', ['convex', 'box', 'none'])
         self.variables['remove_degenerates'] = self.tk.BooleanVar(value=True)
         self.variables['remove_degenerates'].trace_add('write', self._changed)
         t.Checkbutton(meshes, text='Удалять вырожденные полигоны при импорте FBX',
                       variable=self.variables['remove_degenerates']).grid(row=1, column=0, columnspan=3, sticky='w', padx=12, pady=10)
         t.Label(meshes, text='Режим Nanite и источник MID/HIGH задаются на вкладке настройки.',
                 style='Muted.TLabel').grid(row=2, column=0, columnspan=3, sticky='w', padx=12, pady=(0, 12))
+        self._field(meshes,3,'convex_hull_count','Convex: максимум оболочек',8)
+        self._field(meshes,4,'convex_max_hull_verts','Convex: вершин на оболочку',16)
+        self._field(meshes,5,'convex_precision','Convex: точность',100000)
         model = t.LabelFrame(overrides, text='  Переопределения для одной модели  ')
         model.pack(fill='x', pady=8)
         self._field(model, 0, 'override_asset', 'ID модели', '')
         self._field(model, 1, 'override_lod_screen_sizes', 'Screen sizes (пусто = общие)', '')
-        self._field(model, 2, 'override_collision', 'Коллизия', 'inherit', ['inherit', 'none', 'box'])
+        self._field(model, 2, 'override_collision', 'Коллизия', 'inherit', ['inherit', 'convex', 'none', 'box'])
         self._field(model, 3, 'override_remove_degenerates', 'Remove Degenerates', 'inherit', ['inherit', 'true', 'false'])
         for row, key, label in [(4, 'roughness', 'Roughness'), (5, 'metallic', 'Metallic'),
                                 (6, 'normal_strength', 'Normal Strength'), (7, 'uv_scale', 'UV Scale'),
@@ -633,6 +639,8 @@ class PipelineWindow(GuidedWindow):
             for key, var in self.variables.items():
                 from . import profiles
                 value = profile.get(key, profiles.DEFAULTS.get(key, var.get()))
+                if key.startswith('convex_'):
+                    value=profiles.convex_settings(profile)[key[len('convex_'):]]
                 if key.startswith('override_'):
                     value = 'inherit' if key in ('override_collision', 'override_remove_degenerates') else ''
                 if key == 'incremental':

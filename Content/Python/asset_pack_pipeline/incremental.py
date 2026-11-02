@@ -15,6 +15,7 @@ def fingerprint(manifest, asset, operation, engine_version):
     profile = profiles.effective(manifest['profile'], asset['id'])
     files = {lod['file'] for lod in asset['lods']} | set(asset['textures'].values())
     settings = {key: profile[key] for key in sorted(profiles.OVERRIDE_KEYS)}
+    if profile['collision']=='convex':settings['convex_collision']=profiles.convex_settings(profile)
     # UI profiles serialize 1.0 where a hand-authored profile may use 1.
     # Numeric equivalents must identify the same effective Unreal settings.
     for key in ('roughness', 'metallic', 'normal_strength', 'uv_scale'):

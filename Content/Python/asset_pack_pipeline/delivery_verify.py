@@ -42,7 +42,7 @@ try:
                     'mesh_path': asset['mesh_path'], 'import_filenames': imported,
                     'expected_source': asset['lods'][0]['file'], 'nanite_triangles': mesh.get_num_nanite_triangles(),
                     'fallback_triangles': mesh.get_num_triangles(0)})
-            checks['collision'] = smes.get_simple_collision_count(mesh)==expected['simple_collision_count']
+            checks['collision'] = smes.get_simple_collision_count(mesh)+smes.get_convex_collision_count(mesh)==expected['simple_collision_count']
             mi = mesh.get_material(0)
             checks['material'] = isinstance(mi,u.MaterialInstanceConstant) and isinstance(mi.get_editor_property('parent'),u.Material)
             checks['scalars'] = checks['material'] and all(abs(mel.get_material_instance_scalar_parameter_value(mi,k)-v)<1e-5

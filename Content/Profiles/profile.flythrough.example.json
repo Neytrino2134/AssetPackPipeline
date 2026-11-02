@@ -17,7 +17,7 @@
   "nanite_source": "AUTO",
   "validation_policy": "warn",
   "remove_degenerates": true,
-  "collision": "box",
+  "collision": "convex",
   "flythrough": {
     "seconds": 8,
     "fps": 24,

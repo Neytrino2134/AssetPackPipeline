@@ -1,12 +1,15 @@
 #pragma once
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "AssetPackPipelineNative.generated.h"
+class UStaticMesh;
 
 UCLASS()
 class ASSETPACKPIPELINEEDITOR_API UAssetPackPipelineNative : public UBlueprintFunctionLibrary
 {
     GENERATED_BODY()
 public:
+    UFUNCTION(BlueprintCallable, Category="Asset Pack Pipeline")
+    static FVector GetCollisionProbe(UStaticMesh* Mesh);
     UFUNCTION(BlueprintCallable, Category="Asset Pack Pipeline")
     static void OpenWindow();
     UFUNCTION(BlueprintCallable, Category="Asset Pack Pipeline")

@@ -30,6 +30,7 @@ def prepare(base, source, pack, fmt, variants='both', renders=(), lod=0, finaliz
                  destination_root='/Game/'+pack, mesh_subdirectory=variant,
                  nanite_enabled=variant == 'Nanite', nanite_source='AUTO', validation_policy='warn',
                  texture_directory=fmt+'/Textures', asset_overrides={}, skip_invalid_sources=False)
+        p['collision']='convex'
         p['overview'] = dict(p.get('overview', {}), map_name='Overview_'+pack+'_'+variant)
         p['overview'].pop('map_path_override', None)
         p.pop('asset_ids', None)

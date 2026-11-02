@@ -21,7 +21,7 @@
   "nanite_enabled": false,
   "remove_degenerates": true,
   "roughness": 0.85,
-  "collision": "box",
+  "collision": "convex",
   "overview": {
     "columns": 4,
     "spacing": 100,
@@ -46,7 +46,7 @@
       "roughness": 0.6,
       "normal_strength": 0.8,
       "uv_scale": 1,
-      "collision": "box",
+      "collision": "convex",
       "lod_screen_sizes": [
         1,
         0.6,

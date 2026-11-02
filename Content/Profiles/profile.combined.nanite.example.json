@@ -19,7 +19,7 @@
   "validation_policy": "warn",
   "remove_degenerates": true,
   "roughness": 0.85,
-  "collision": "box",
+  "collision": "convex",
   "overview": {
     "columns": 4,
     "spacing": 100,

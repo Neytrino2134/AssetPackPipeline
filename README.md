@@ -1,4 +1,8 @@
-# Asset Pack Pipeline 0.28.0
+# Asset Pack Pipeline 0.29.0
+
+Quick Start now generates fitted Auto Convex simple collisions instead of one box.
+Professional mode supports convex / box / none and configurable hull budgets.
+Existing meshes can be updated without reimport. See [collision setup](Docs/ConvexCollision0290.md).
 
 Still renders explicitly select Lit, regardless of the editor viewport mode.
 Quick Start adds optional Wireframe, Visibility Collision and Player Collision

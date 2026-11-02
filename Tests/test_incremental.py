@@ -22,6 +22,12 @@ class IncrementalTests(unittest.TestCase):
                                     'lod_screen_sizes':[1.0], 'asset_overrides':{}, 'incremental':True},
                          'source_hashes':{str(self.source):incremental.discovery.digest(self.source)}}
 
+    def test_convex_budget_change_invalidates_receipt(self):
+        self.manifest['profile']['collision']='convex'
+        first=incremental.fingerprint(self.manifest,self.asset,'settings_update','5.8.4')
+        self.manifest['profile']['convex_collision']={'hull_count':16}
+        self.assertNotEqual(first,incremental.fingerprint(self.manifest,self.asset,'settings_update','5.8.4'))
+
     def test_fingerprint_changes_for_effective_settings_and_operation(self):
         first = incremental.fingerprint(self.manifest, self.asset, 'import', '5.8.3')
         self.manifest['profile']['lod_screen_sizes'] = [1]

@@ -1,4 +1,6 @@
 #include "AssetPackPipelineNative.h"
+#include "Engine/StaticMesh.h"
+#include "PhysicsEngine/BodySetup.h"
 #include "Interfaces/IPluginManager.h"
 #include "PluginDescriptor.h"
 #include "Modules/ModuleManager.h"
@@ -310,7 +312,10 @@ public:
         Only([this](){return IsPro();});
         ProField(TEXT("lod_screen_sizes"),TEXT("Screen sizes LOD"),TEXT("1, 0.5, 0.25, 0.125, 0.0625"));
         ProField(TEXT("nanite_source"),TEXT("Источник Nanite: AUTO / MID / HIGH"),TEXT("AUTO"));
-        ProField(TEXT("collision"),TEXT("Коллизия: none / box"),TEXT("box"));
+        ProField(TEXT("collision"),TEXT("Коллизия: convex / box / none"),TEXT("convex"));
+        ProField(TEXT("convex_hull_count"),TEXT("Convex: максимум оболочек"),TEXT("8"));
+        ProField(TEXT("convex_max_hull_verts"),TEXT("Convex: вершин на оболочку"),TEXT("16"));
+        ProField(TEXT("convex_precision"),TEXT("Convex: точность"),TEXT("100000"));
         EndOnly();
 
         Section(TEXT("Материалы"),-1,false);
@@ -467,6 +472,19 @@ public:
     }
 };
 IMPLEMENT_MODULE(FAssetPackPipelineEditorModule, AssetPackPipelineEditor)
+FVector UAssetPackPipelineNative::GetCollisionProbe(UStaticMesh* Mesh)
+{
+    if (!Mesh) return FVector::ZeroVector;
+    if (const UBodySetup* Body=Mesh->GetBodySetup())
+        for (const FKConvexElem& Hull:Body->AggGeom.ConvexElems)
+            if (!Hull.VertexData.IsEmpty())
+            {
+                FVector Sum=FVector::ZeroVector;
+                for (const FVector& Vertex:Hull.VertexData) Sum+=Vertex;
+                return Hull.GetTransform().TransformPosition(Sum/Hull.VertexData.Num());
+            }
+    return Mesh->GetBoundingBox().GetCenter();
+}
 void UAssetPackPipelineNative::OpenWindow(){ LivePipelineTab=FGlobalTabmanager::Get()->TryInvokeTab(PipelineTab); }
 bool UAssetPackPipelineNative::IsWindowOpen(){ return LivePipelineTab.IsValid(); }
 void UAssetPackPipelineNative::CloseWindow(){ if(auto Tab=LivePipelineTab.Pin()) Tab->RequestCloseTab(); LivePipelineTab.Reset(); }

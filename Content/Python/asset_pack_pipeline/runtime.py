@@ -288,13 +288,8 @@ def _settings(manifest, mesh, instance):
     nanite = mesh.get_editor_property('nanite_settings')
     nanite.enabled = profile.get('nanite_enabled', False)
     subsystem.set_nanite_settings(mesh, nanite, True)
-    subsystem.remove_collisions(mesh)
-    collision = profile.get('collision', 'none')
-    if collision == 'box':
-        if subsystem.add_simple_collisions(mesh, u.ScriptingCollisionShapeType.BOX) < 0:
-            raise RuntimeError('Failed to create box collision')
-    elif collision != 'none':
-        raise ValueError('Only collision none/box supported in 0.1')
+    from . import collision
+    collision.apply(mesh,profile,subsystem)
     # Collision edits rebuild render data. Save waits for pending mesh compilation;
     # apply thresholds only after that rebuild has completed.
     save(mesh)
@@ -351,8 +346,10 @@ def inspect(manifest, asset):
     source_triangles = [nanite_triangles] if nanite_expected else triangles
     remove_flags = [subsystem.get_lod_build_settings(mesh, i).remove_degenerates for i in range(count)]
     fbx_flags_ok = profile['source_format'].upper() != 'FBX' or all(v == profile.get('remove_degenerates', True) for v in remove_flags)
-    collision_count = subsystem.get_simple_collision_count(mesh)
-    collision_ok = collision_count == (1 if profile.get('collision', 'none') == 'box' else 0)
+    from . import collision
+    collision_check=collision.inspect(mesh,profile.get('collision','convex'),subsystem)
+    collision_count=collision_check['simple_collision_count']
+    collision_ok=collision_check['collision_count_ok'] and collision_check['collision_complexity_ok']
     bounds = mesh.get_bounding_box()
     from . import diagnostics
     mismatches = diagnostics.explain_mismatches(manifest, asset, source_triangles)
@@ -373,7 +370,7 @@ def inspect(manifest, asset):
             'effective_settings': {k: profile[k] for k in profiles.OVERRIDE_KEYS},
             'bounds_min': [bounds.min.x, bounds.min.y, bounds.min.z],
             'bounds_max': [bounds.max.x, bounds.max.y, bounds.max.z], 'nanite': nanite,
-            'simple_collision_count': collision_count, 'collision_count_ok': collision_ok,
+            **collision_check, 'collision_count_ok': collision_ok,
             'triangle_mismatches': mismatches,
             'preparation_passed': preparation_ok, 'strict_passed': strict_ok, 'warnings': warnings,
             'effective_remove_degenerates': remove_flags, 'fbx_flags_ok': fbx_flags_ok,

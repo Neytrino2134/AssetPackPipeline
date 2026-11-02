@@ -337,6 +337,7 @@ def submit_b64(encoded):
                     profile['texture_directory'] = base['texture_directory']
                     profile['nanite_source'] = base.get('nanite_source','AUTO')
                     profile['asset_overrides'] = base.get('asset_overrides',{})
+                    profile['collision']=base.get('collision','convex')
                     if base.get('asset_ids'): profile['asset_ids'] = base['asset_ids']
         if action=='save_profile':
             saved = dict(next(iter(profiles.values())))

@@ -93,6 +93,14 @@ def frame(bounds_min,bounds_max,yaw,pitch,fov,aspect,margin):
 def collision_audit(camera,actor,floor,expected=True):
     import unreal as u
     origin,extent=actor.get_actor_bounds(False)
+    # A multi-hull collider may have a legitimate hole at the mesh bounds centre.
+    body=actor.static_mesh_component.static_mesh.get_editor_property('body_setup')
+    convex=body.get_editor_property('agg_geom').get_editor_property('convex_elems')
+    probe='bounds_center'
+    if expected and convex:
+        centroid=u.AssetPackPipelineNative.get_collision_probe(actor.static_mesh_component.static_mesh)
+        origin=u.MathLibrary.transform_location(actor.get_actor_transform(),centroid)
+        probe='convex_hull_centroid'
     checks=[]
     for axis in range(3):
         a=[origin.x,origin.y,origin.z];b=list(a)
@@ -109,7 +117,7 @@ def collision_audit(camera,actor,floor,expected=True):
             hit_actor=next((v for v in parts if isinstance(v,u.Actor)),None)
         checks.append({'axis':'XYZ'[axis],'blocking_hit':hit,'expected_actor':hit_actor==actor,
                        'hit_actor':hit_actor.get_path_name() if hit_actor else None})
-    return {'simple_collision_traces':checks,'expected_blocking':expected,
+    return {'simple_collision_traces':checks,'expected_blocking':expected,'probe':probe,
             'passed':all(c['blocking_hit'] and c['expected_actor'] if expected else not c['blocking_hit'] for c in checks)}
 
 

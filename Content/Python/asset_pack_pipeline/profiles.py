@@ -3,9 +3,21 @@ import copy
 import math
 import re
 
-DEFAULTS = {'collision': 'none', 'remove_degenerates': True, 'roughness': 0.85,
+DEFAULTS = {'collision': 'convex', 'remove_degenerates': True, 'roughness': 0.85,
             'metallic': 0.0, 'normal_strength': 1.0, 'uv_scale': 1.0, 'orm_texture': '', 'nanite_source': 'AUTO'}
 OVERRIDE_KEYS = set(DEFAULTS) | {'lod_screen_sizes'}
+
+def convex_settings(profile):
+    value=profile.get('convex_collision',{})
+    if not isinstance(value,dict) or set(value)-{'hull_count','max_hull_verts','precision'}:
+        raise ValueError('Invalid convex_collision settings')
+    result={}
+    for name,default,low,high in (('hull_count',8,1,64),('max_hull_verts',16,4,64),('precision',100000,10000,1000000)):
+        number=value.get(name,default)
+        if isinstance(number,bool) or not isinstance(number,int) or not low<=number<=high:
+            raise ValueError(f'convex_collision.{name} must be an integer in [{low}, {high}]')
+        result[name]=number
+    return result
 
 
 def validate_settings(profile):
@@ -28,8 +40,9 @@ def validate_settings(profile):
         raise ValueError('LOD screen sizes must be finite numbers in (0,1]')
     if any(a <= b for a, b in zip(sizes, sizes[1:])):
         raise ValueError('LOD screen sizes must decrease strictly')
-    if profile.get('collision', 'none') not in ('none', 'box'):
-        raise ValueError('collision must be none or box')
+    if profile.get('collision', 'convex') not in ('none', 'box', 'convex'):
+        raise ValueError('collision must be none, box or convex')
+    convex_settings(profile)
     if not isinstance(profile.get('remove_degenerates', True), bool):
         raise ValueError('remove_degenerates must be a boolean')
     for key, low, high in [('roughness', 0, 1), ('metallic', 0, 1), ('normal_strength', 0, 4), ('uv_scale', .01, 100)]:

@@ -113,7 +113,7 @@ def inspect(plan):
             checks['nanite'] = bool(mesh.get_editor_property('nanite_settings').enabled) == expected['nanite']
             if expected['nanite']:
                 checks['nanite_source'] = row['nanite_triangles'] == expected['nanite_triangles'] > 0
-            checks['collision'] = smes.get_simple_collision_count(mesh) == expected['simple_collision_count']
+            checks['collision'] = smes.get_simple_collision_count(mesh)+smes.get_convex_collision_count(mesh) == expected['simple_collision_count']
             mi = mesh.get_material(0)
             checks['material'] = isinstance(mi, u.MaterialInstanceConstant)
             if mi:

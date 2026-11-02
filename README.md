@@ -1,4 +1,8 @@
-# Asset Pack Pipeline 0.24.1
+# Asset Pack Pipeline 0.25.1
+
+Final exports use `FinalProject/YYYY-MM-DD_HH-MM-SS/Pack_Project` and
+`Pack_Renders`, with separate ZIPs and universal image filenames.
+See [final output layout](Docs/FinalOutput0251.md).
 
 Custom UI performance: background status snapshots keep startup and idle interaction
 independent of Unreal response time. See [performance verification](Docs/CustomUIPerformance0241.md)

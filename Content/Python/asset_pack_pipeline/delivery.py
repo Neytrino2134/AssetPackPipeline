@@ -134,7 +134,10 @@ def create(manifest, run_id):
     profile, config = manifest['profile'], proposal['delivery_settings']
     base = Path(config['output_directory']) if config['output_directory'] else Path(u.Paths.project_saved_dir()).resolve()/'AssetPackPipeline/Deliveries'
     name = project_name(profile)
-    project = (base/run_id/name).resolve()
+    from .final_output import export_root
+    if (base/'FinalProject').resolve().is_relative_to(Path(u.Paths.project_content_dir()).resolve()):
+        raise ValueError('Delivery output must be outside the authoring Content directory')
+    project = (export_root(base)/(name+'_Project')).resolve()
     content = Path(u.Paths.project_content_dir()).resolve()
     if project.is_relative_to(content):
         raise ValueError('Delivery output must be outside the authoring Content directory')
@@ -242,7 +245,8 @@ def verify_files(report):
         raise RuntimeError('Delivery references authoring plugins')
     if (project/'Plugins').exists():
         raise RuntimeError('Unexpected Plugins directory in clean delivery')
-    if {p.relative_to(project/'Content').parts[0] for p in (project/'Content').rglob('*') if p.is_file()}!={project.name} or Path(report['project_path']).stem!=project.stem:
+    descriptor_path=Path(report['project_path']).resolve()
+    if {p.relative_to(project/'Content').parts[0] for p in (project/'Content').rglob('*') if p.is_file()}!={descriptor_path.stem} or descriptor_path.parent!=project:
         raise RuntimeError('Project name and the single Content folder must match')
     return True
 

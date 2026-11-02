@@ -1,13 +1,26 @@
 import sys
 import tempfile
 import unittest
+import json
 from pathlib import Path
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'Content/Python'))
 from asset_pack_pipeline import cleanup, delivery
+from asset_pack_pipeline.discovery import digest
 
 
 class DeliveryCleanupTests(unittest.TestCase):
+    def test_project_outer_folder_can_have_project_suffix(self):
+        with tempfile.TemporaryDirectory() as temp:
+            project=Path(temp)/'Pack_Project';(project/'Content/Pack').mkdir(parents=True)
+            (project/'Content/Pack/Mesh.uasset').write_bytes(b'mesh')
+            descriptor=project/'Pack.uproject';descriptor.write_text(json.dumps({'FileVersion':3}))
+            report={'project_directory':str(project),'project_path':str(descriptor),
+                    'file_hashes':{str(p.relative_to(project)):digest(p) for p in project.rglob('*') if p.is_file()}}
+            self.assertTrue(delivery.verify_files(report))
+            (project/'Wrong.uproject').write_text(descriptor.read_text())
+            report.update(project_path=str(project/'Wrong.uproject'),file_hashes={})
+            with self.assertRaises(RuntimeError):delivery.verify_files(report)
     def test_builtin_interchange_import_metadata_allowed_but_authoring_modules_blocked(self):
         selected,blocked=delivery.dependency_closure(['/Game/Pack/Mesh'],lambda p:
             ['/Script/InterchangeImport','/Script/ModelContextProtocol','/Script/AssetPackPipeline'], '/Game/Pack')

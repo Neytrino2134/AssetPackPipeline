@@ -67,18 +67,15 @@ def render_steps(steps):
 
 
 def export_final_renders(reports, profile_path):
-    """Copy finished PNGs to <output or Saved/.../RenderExports>/<pack>_Renders_<id>/Renders(.zip)."""
-    import uuid
+    """Copy finished PNGs to FinalProject/<timestamp>/<pack>_Renders(.zip)."""
     from .discovery import read_json
-    from .final_output import export_renders
+    from .final_output import export_renders, export_root
     if not reports:
         raise RuntimeError('Рендеры не созданы.')
     profile = read_json(profile_path)
     output = profile.get('delivery', {}).get('output_directory', '')
     base = Path(output) if output else Path(reports[0]['output_directory']).resolve().parents[1]/'RenderExports'
-    folder = base/f"{profile['pack_id']}_Renders_{uuid.uuid4().hex[:8]}"
-    folder.mkdir(parents=True)
-    return export_renders(reports, folder)
+    return export_renders(reports, export_root(base), profile['pack_id'])
 
 
 class Session:
@@ -156,7 +153,8 @@ class Session:
             elif operation == 'package':
                 self.result = self.api.package_delivery(self.delivery_id)
                 from .final_output import export_renders
-                self.result['renders'] = export_renders(self.render_runs, Path(self.result['zip_path']).parent)
+                from .discovery import read_json
+                self.result['renders'] = export_renders(self.render_runs, Path(self.result['zip_path']).parent, read_json(path)['pack_id'])
             elif operation == 'export_renders':
                 self.result = {'renders': export_final_renders(self.render_runs, path)}
             else:

@@ -1,0 +1,13 @@
+{
+  "version": "0.25.1",
+  "date": "2026-11-02",
+  "unit_tests": 125,
+  "passed": true,
+  "verified_meshes": 20,
+  "fresh_unreal_verification": "passed",
+  "source": "Copy of existing real project and PNG; no reimport or rerender",
+  "project_zip": "..\\..\\Saved\\FinalLayoutSmoke\\FinalProject\\2026-11-02_15-44-01\\NativeRegression_8bcf273e_Project.zip",
+  "renders": "..\\..\\Saved\\FinalLayoutSmoke\\FinalProject\\2026-11-02_15-44-01\\NativeRegression_8bcf273e_Renders",
+  "details": "Saved/FinalLayoutSmoke/smoke.json",
+  "verifier": "Saved/FinalLayoutSmoke/Verifier/verification.json"
+}

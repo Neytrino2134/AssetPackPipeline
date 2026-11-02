@@ -50,7 +50,7 @@ class FinalWindow:
         t.Entry(row, textvariable=self.variables['delivery_output_directory']).pack(side='left', fill='x', expand=True)
         t.Button(row, text='Обзор…', command=self.browse_final_output).pack(side='left', padx=6)
         t.Label(box, text='Пусто — Saved/AssetPackPipeline/Deliveries. Каждый запуск в новой папке.\n'
-                'LOD и Nanite входят в один проект; PNG и Renders.zip сохраняются рядом с ZIP проекта.',
+                'FinalProject / дата-время / ИмяПака_Project и ИмяПака_Renders. LOD и Nanite — в одном проекте.',
                 style='Muted.TLabel').pack(anchor='w')
         row = t.Frame(box)
         row.pack(fill='x', pady=6)
@@ -60,7 +60,7 @@ class FinalWindow:
             return  # Render-only uses the quick-start «3. Изображения» settings.
         t.Button(row, text='Рендер и вывод финальных моделей', style='Accent.TButton',
                  command=self.render_only).pack(side='left')
-        t.Label(box, text='Рендер берёт настройки из «3. Изображения» для уже импортированных мешей; PNG и Renders.zip '
+        t.Label(box, text='Рендер берёт настройки из «3. Изображения» для уже импортированных мешей; общая папка PNG и ZIP '
                 'сохраняются в каталог вывода (пусто — Saved/AssetPackPipeline/RenderExports).',
                 style='Muted.TLabel', wraplength=900).pack(anchor='w')
 

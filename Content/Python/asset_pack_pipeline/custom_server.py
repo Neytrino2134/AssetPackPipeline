@@ -80,11 +80,12 @@ def dispatch(method,args,kwargs):
         from . import cleanup
         if api.readiness()['active_run']:raise RuntimeError('Задача выполняется.')
         manifest=args[0]
-        if method=='plan_imported_cleanup':return cleanup.plan(manifest,imported=True,folder_scope=kwargs.get('folder_scope',False))
+        force=bool(kwargs.get('force',False))
+        if method=='plan_imported_cleanup':return cleanup.plan(manifest,imported=True,folder_scope=kwargs.get('folder_scope',False),force=force)
         backup=Path(args[1]).resolve()
         allowed=(Path(unreal.Paths.project_saved_dir()).resolve()/'AssetPackPipeline/ImportedCleanup').resolve()
         if not backup.is_relative_to(allowed):raise ValueError('Backup must stay under ImportedCleanup')
-        return cleanup.execute(manifest,backup,imported=True,expected=kwargs.get('expected'),folder_scope=kwargs.get('folder_scope',False))
+        return cleanup.execute(manifest,backup,imported=True,expected=kwargs.get('expected'),folder_scope=kwargs.get('folder_scope',False),force=force)
     if method not in METHODS:raise ValueError('RPC command not permitted')
     return getattr(api,method)(*args,**kwargs)
 

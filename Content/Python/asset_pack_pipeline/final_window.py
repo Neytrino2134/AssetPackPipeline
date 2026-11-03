@@ -158,12 +158,17 @@ class FinalWindow:
         pack = selected_pack or self.variables['pack_id'].get().strip()
         root = selected_root or (self.variables['destination_root'].get().strip().rstrip('/') if self.mode.get() == 'Профессиональный' else '/Game/'+pack)
         manifest = {'profile': {'pack_id':pack, 'destination_root':root}}
+        reasons = {'forced_current_map': 'открытая сейчас карта — будет открыта L_Presentation',
+                   'forced_external_references': 'на ассет ссылаются другие пакеты — ссылки будут обнулены',
+                   'forced_folder_removal': 'принудительное удаление папки',
+                   'selected_folder_and_unreferenced': 'без внешних ссылок',
+                   'owned_and_unreferenced': 'ассет плагина без внешних ссылок'}
         def fetch():
             if self.api.readiness()['active_run'] or getattr(self, 'guide_session', None) and not self.guide_session.done:
                 raise RuntimeError('Завершите текущую задачу перед очисткой.')
-            return (self.api.plan_imported_cleanup(manifest,folder_scope=folder_scope) if external
-                    else cleanup.plan(manifest, imported=True, folder_scope=folder_scope))
-        holder = dd.Dialog(self.root, 'План очистки импортированного пака', 940, 620, minsize=(700, 460),
+            return (self.api.plan_imported_cleanup(manifest,folder_scope=folder_scope,force=True) if external
+                    else cleanup.plan(manifest, imported=True, folder_scope=folder_scope, force=True))
+        holder = dd.Dialog(self.root, 'План очистки импортированного пака', 940, 640, minsize=(700, 480),
                            loading='Составление плана очистки…')
         dialog = holder.window
         def build(proposal):
@@ -171,11 +176,17 @@ class FinalWindow:
             summary = self.tk.Frame(body, bg=dd.BG)
             summary.pack(fill='x', padx=20, pady=(16, 8))
             self.ttk.Label(summary, text=f"{pack}  ·  {root}", style='Hero.TLabel').pack(anchor='w')
-            self.ttk.Label(summary, text=f"Удалить: {proposal['delete_count']}   ·   Сохранить: {proposal['retained_count']}",
+            external_count = len({p for refs in proposal.get('external_referencers', {}).values() for p in refs})
+            self.ttk.Label(summary, text=f"Удалить: {proposal['delete_count']} ассетов и папку {root} целиком"
+                           + (f"   ·   внешних пакетов со ссылками: {external_count}" if external_count else ''),
                            style='Subtitle.TLabel').pack(anchor='w', pady=(4, 0))
+            presentation = proposal.get('presentation_map') or cleanup.PRESENTATION_MAP
+            self.tk.Label(summary, text=('Перед удалением будет открыта ' if proposal.get('presentation_exists') else
+                                         'Перед удалением будет создана и открыта ') + presentation + '.',
+                          bg=dd.BG, fg='#ffb36b', anchor='w', font=('Segoe UI', 10)).pack(anchor='w', pady=(6, 0))
             if folder_scope:
-                self.tk.Label(summary, text='Режим очистки папки Content: включены поддерживаемые ассеты БЕЗ меток плагина.',
-                              bg=dd.BG, fg='#ffb36b', anchor='w', font=('Segoe UI', 10)).pack(anchor='w', pady=(6, 0))
+                self.tk.Label(summary, text='Режим очистки папки Content: удаляются все ассеты папки, включая ассеты без меток плагина.',
+                              bg=dd.BG, fg='#ffb36b', anchor='w', font=('Segoe UI', 10)).pack(anchor='w')
             bar = self.tk.Frame(body, bg=dd.PANEL)
             bar.pack(fill='x', side='bottom')
             frame = self.tk.Frame(body, bg=dd.BG)
@@ -189,17 +200,20 @@ class FinalWindow:
             text.tag_configure('delete', foreground='#ff9d9d')
             text.tag_configure('keep', foreground='#9cdbb2')
             text.tag_configure('muted', foreground='#8f98aa')
-            text.insert('end', 'Текущая открытая карта и ассеты с внешними ссылками сохраняются. Для полной очистки сначала откройте L_Presentation.\n'
-                        'Перед удалением создаётся резервная копия в Saved/AssetPackPipeline/ImportedCleanup. '
+            text.insert('end', 'Вся папка будет удалена, включая корневую. Ссылки на эти ассеты в других пакетах будут обнулены, '
+                        'такие пакеты сохраняются после удаления.\n'
+                        'Перед удалением в Saved/AssetPackPipeline/ImportedCleanup копируются все файлы папки и пакеты со ссылками на неё. '
                         'Исходные FBX/GLB, поставки и PNG не затрагиваются.\n\n', 'muted')
             for row in proposal['assets']:
                 text.insert('end', 'УДАЛИТЬ    ' if row['can_delete'] else 'СОХРАНИТЬ  ', 'delete' if row['can_delete'] else 'keep')
-                text.insert('end', row['id']+' — '+row['reason']+'\n')
+                text.insert('end', row['id']+' — '+reasons.get(row['reason'], row['reason'])+'\n')
             text.configure(state='disabled')
+            status = self.tk.Label(bar, text='', bg=dd.PANEL, fg=dd.MUTED, font=('Segoe UI', 10))
             def apply():
                 if not dd.confirm(dialog, 'Подтверждение удаления',
-                                  f"Удалить {proposal['delete_count']} перечисленных ассетов из {root}?\n\n"
-                                  'Перед удалением будет создана резервная копия.', ok_text='Удалить', danger=True):
+                                  f"Удалить {proposal['delete_count']} ассетов и папку {root} целиком?\n\n"
+                                  f"Будет открыта {presentation}" + ('' if proposal.get('presentation_exists') else ' (создаётся из шаблона Basic)') +
+                                  '. Перед удалением создаётся резервная копия папки.', ok_text='Удалить всё', danger=True):
                     return
                 try:
                     if self.api.readiness()['active_run'] or getattr(self, 'guide_session', None) and not self.guide_session.done:
@@ -207,15 +221,35 @@ class FinalWindow:
                     folder = self.saved/'ImportedCleanup'/uuid.uuid4().hex
                     folder.mkdir(parents=True)
                     (folder/'plan.json').write_text(json.dumps(proposal, ensure_ascii=False, indent=2), encoding='utf-8')
-                    result = self.api.execute_imported_cleanup(manifest,str(folder/'backup'),expected=proposal['delete_packages'],folder_scope=folder_scope) if getattr(self,'external',False) else cleanup.execute(manifest, folder/'backup', imported=True, expected=proposal['delete_packages'], folder_scope=folder_scope)
-                    (folder/'result.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
-                    self._log('Очистка импортированного пака: '+str(folder))
-                    self.state_label.configure(text=f"Удалено: {result['deleted_count']}; сохранено: {result['retained_count']}")
-                    holder.close()
                 except Exception as error:
                     self._callback_error(type(error), error, error.__traceback__)
-            delete = dd.button(bar, 'Удалить перечисленные ассеты…', apply, danger=True)
+                    return
+                def run():
+                    if external:
+                        return self.api.execute_imported_cleanup(manifest, str(folder/'backup'), expected=proposal['delete_packages'],
+                                                                 folder_scope=folder_scope, force=True)
+                    return cleanup.execute(manifest, folder/'backup', imported=True, expected=proposal['delete_packages'],
+                                           folder_scope=folder_scope, force=True)
+                def finished(ok, result):
+                    if not ok:
+                        if not holder.closed:
+                            status.configure(text='')
+                            dd.enable(delete, True); dd.enable(close, True)
+                        self._callback_error(type(result), result, result.__traceback__)
+                        return
+                    (folder/'result.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
+                    self._log(f"Очистка {root}: удалено {result['deleted_count']}, папка удалена: {'да' if result.get('folder_removed') else 'нет'}, "
+                              f"открыта {result.get('presentation_map')}{' (создана)' if result.get('presentation_created') else ''}. Копия: {folder}")
+                    self.state_label.configure(text=f"Удалено: {result['deleted_count']}; папка {root} "
+                                                    + ('удалена' if result.get('folder_removed') else 'удалена не полностью — см. журнал'))
+                    holder.close()
+                dd.enable(delete, False); dd.enable(close, False)
+                status.configure(text='Открытие L_Presentation и удаление… Не закрывайте Unreal.')
+                status.pack(side='left', padx=8)
+                dd.run_async(dialog, run, finished, threaded=external)
+            delete = dd.button(bar, 'Удалить всё и папку…', apply, danger=True)
             delete.pack(side='left', padx=16, pady=12)
             dd.enable(delete, bool(proposal['delete_count']))
-            dd.button(bar, 'Закрыть', holder.close).pack(side='right', padx=16, pady=12)
+            close = dd.button(bar, 'Закрыть', holder.close)
+            close.pack(side='right', padx=16, pady=12)
         holder.load(fetch, build, threaded=external)

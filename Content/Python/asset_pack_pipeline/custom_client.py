@@ -20,7 +20,8 @@ class RemoteAPI:
         request=self.root/(request_id+'.request.json')
         response=self.root/(request_id+'.response.json')
         protocol.write(request,{'id':request_id,'session':self.config['session'],'created':time.time(),'method':method,'args':args,'kwargs':kwargs},self.token)
-        deadline=time.monotonic()+120
+        # Forced folder cleanup loads, deletes and saves whole packs inside one RPC.
+        deadline=time.monotonic()+(1800 if method=='execute_imported_cleanup' else 120)
         next_check=0
         while time.monotonic()<deadline:
             if os.name=='nt' and time.monotonic()>next_check and self.config.get('engine_pid'):

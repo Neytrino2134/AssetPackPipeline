@@ -80,6 +80,31 @@ def enable(item, enabled=True):
                    cursor='hand2' if enabled else 'arrow')
 
 
+def run_async(widget, work, done, threaded=False):
+    """Run work() and call done(ok, result_or_exception) on the Tk thread.
+    threaded=False keeps work on the Tk thread (Unreal API) after a short repaint delay."""
+    results = queue.Queue()
+
+    def run():
+        try:
+            results.put((True, work()))
+        except Exception as error:
+            results.put((False, error))
+
+    def poll():
+        try:
+            ok, value = results.get_nowait()
+        except queue.Empty:
+            widget.after(60, poll)
+            return
+        done(ok, value)
+    if threaded:
+        threading.Thread(target=run, daemon=True).start()
+        widget.after(60, poll)
+    else:
+        widget.after(80, lambda: (run(), poll()))
+
+
 class Spinner:
     def __init__(self, parent, text='Загрузка…'):
         import tkinter as tk

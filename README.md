@@ -1,4 +1,9 @@
-# Asset Pack Pipeline 0.31.1
+# Asset Pack Pipeline 0.31.2
+
+Imported pack cleanup removes the whole pack folder: it backs up every file, opens
+L_Presentation (creating /Game/Presentation/L_Presentation from the Basic template
+when missing), force-deletes all assets including the root folder and saves packages
+whose references were cleared.
 
 Custom UI opens centred without a white first frame. Updates, AI settings, Content
 scan and cleanup plan share one dark window style with the MESHFLOW title bar,

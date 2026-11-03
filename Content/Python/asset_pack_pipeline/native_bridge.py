@@ -270,7 +270,7 @@ def submit_b64(encoded):
             if action=='cleanup_plan':
                 root = data['cleanup_root'].rstrip('/')
                 manifest = {'profile':{'destination_root':root,'pack_id':root.rsplit('/',1)[-1]}}
-                proposal = cleanup.plan(manifest,imported=True,folder_scope=True)
+                proposal = cleanup.plan(manifest,imported=True,folder_scope=True,force=True)
                 _cleanup = (manifest,proposal)
                 state({'cleanup_plan':proposal})
             else:
@@ -282,7 +282,7 @@ def submit_b64(encoded):
                 backup = folder()/'Cleanup'/uuid.uuid4().hex
                 backup.mkdir(parents=True)
                 (backup/'plan.json').write_text(json.dumps(proposal,ensure_ascii=False,indent=2),encoding='utf-8')
-                result = cleanup.execute(manifest,backup/'backup',imported=True,folder_scope=True,expected=proposal['delete_packages'])
+                result = cleanup.execute(manifest,backup/'backup',imported=True,folder_scope=True,force=True,expected=proposal['delete_packages'])
                 (backup/'result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
                 state({'cleanup_result':result})
             return

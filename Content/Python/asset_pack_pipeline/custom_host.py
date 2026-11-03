@@ -21,9 +21,8 @@ class CustomWindow(PipelineWindow):
         from .custom_chrome import TITLE
         self.root.title(TITLE)
         if self.chrome.logo:self.root.iconphoto(True,self.chrome.logo)
-        self._restore_ui_state()
-        self.chrome.apply_native_frame()
         self.state_label.configure(text='Окно готово. Подключение к Unreal…')
+        self._show()
         self.root.after(10000,self._autosave_ui_state)
         self.api.start()
         self.root.after(50,self.external_poll)
@@ -97,22 +96,31 @@ class CustomWindow(PipelineWindow):
                 self._poll_error=str(error);self._log('Связь с Unreal: '+str(error))
         if not self.closed:self.root.after(100,self.external_poll)
 
-    def _restore_ui_state(self):
-        from . import ui_state
+    def _show(self):
+        """Restore saved state, then reveal: the window maps transparent, gets its
+        custom caption and saved (or centred) placement, and only then fades in."""
+        from . import ui_state,dark_dialog
         state=ui_state.load(self)
-        if not state:return
-        try:ui_state.restore(self,state)
-        except Exception as error:self._log('Не удалось восстановить настройки окна: '+str(error))
+        if state:
+            try:ui_state.restore(self,state)
+            except Exception as error:self._log('Не удалось восстановить настройки окна: '+str(error))
+        dark_dialog.center(self.root,1200,860)
         def place():
             self.chrome.apply_native_frame()
-            try:ui_state.restore_geometry(self,state)
-            except Exception as error:self._log('Не удалось восстановить положение окна: '+str(error))
+            if state:
+                try:ui_state.restore_geometry(self,state)
+                except Exception as error:self._log('Не удалось восстановить положение окна: '+str(error))
+            else:dark_dialog.center(self.root,1200,860)
+            self.root.update_idletasks()
+            self.shown_seconds=time.monotonic()-self.started
+            dark_dialog.fade_in(self.root)
         # First map only; a flag, since tkinter's unbind(seq,id) drops every <Map> handler.
         pending=[True]
         def mapped(event):
             if event.widget is self.root and pending:
                 pending.clear();self.root.after_idle(place)
         self.root.bind('<Map>',mapped,add='+')
+        self.root.deiconify()
 
     def _autosave_ui_state(self):
         # Also covers a client closed by Unreal (orphan cleanup) or a crash.
@@ -206,7 +214,7 @@ def main():
                 plan=config['probe_plan'];window.api.start_guided(plan['paths'],plan['steps']);probe_started=True
             gaps=sorted(window.heartbeat_gaps)
             marker.write_text(json.dumps({'pid':os.getpid(),'tkinter_loaded':'tkinter' in sys.modules,'unreal_loaded':'unreal' in sys.modules,
-                'rpc_connected':True,'probe_started':probe_started,'widget_seconds':window.widget_seconds,
+                'rpc_connected':True,'probe_started':probe_started,'widget_seconds':window.widget_seconds,'shown_seconds':getattr(window,'shown_seconds',None),
                 'elapsed_seconds':time.monotonic()-window.started,'heartbeat_samples':len(gaps),
                 'heartbeat_p95_seconds':gaps[int(.95*(len(gaps)-1))] if gaps else None,
                 'heartbeat_max_after_start_seconds':max(window.heartbeat_gaps[1:],default=0),

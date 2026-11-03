@@ -1,4 +1,8 @@
-# Asset Pack Pipeline 0.31.0
+# Asset Pack Pipeline 0.31.1
+
+Custom UI opens centred without a white first frame. Updates, AI settings, Content
+scan and cleanup plan share one dark window style with the MESHFLOW title bar,
+a loading animation while data loads, and dark confirmations.
 
 Smart Normal conversion (Quick Start → «1. Исходники», on by default): the importer
 reads MeshInfo texture entries (`convention`, `preferred`, `unreal.flip_green_channel`)

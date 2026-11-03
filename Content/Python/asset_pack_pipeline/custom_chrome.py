@@ -6,6 +6,7 @@ from . import __version__
 TITLE='MESHFLOW Asset Pack Pipeline v'+__version__
 SUBTITLE='FBX / GLB   →   Static Mesh + LOD   →   Материалы   →   Проверка'
 HEIGHT=64
+COMPACT_HEIGHT=44  # dialogs: logo, title and close button only
 PIN_BITMAP = """#define pin_width 16
 #define pin_height 16
 static unsigned char pin_bits[] = {
@@ -16,40 +17,63 @@ PIN_ACTIVE='#3975da'
 
 class WindowChrome:
     """One full-width header: brand, pipeline steps and window buttons; every
-    non-button pixel of it drags the window."""
-    def __init__(self,root,on_close):
+    non-button pixel of it drags the window. compact=True is the dialog variant:
+    small logo, one title line and a close button, same colours and dragging."""
+    def __init__(self,root,on_close,title=TITLE,subtitle=SUBTITLE,compact=False):
         import tkinter as tk
         self.root=root
+        self.compact=compact
         bg='#12151b'
-        self.bar=tk.Frame(root,bg=bg,height=HEIGHT)
+        self.bg=bg
+        self.bar=tk.Frame(root,bg=bg,height=COMPACT_HEIGHT if compact else HEIGHT)
         self.bar.pack(side='top',fill='x')
         self.bar.pack_propagate(False)
         self.logo=None
         logo_path=Path(__file__).resolve().parents[3]/'Resources/MeshFlowLogo48.png'
-        try:self.logo=tk.PhotoImage(master=root,file=str(logo_path))
+        try:
+            self.logo=tk.PhotoImage(master=root,file=str(logo_path))
+            if compact:self.logo=self.logo.subsample(2)
         except tk.TclError:pass
         badge=tk.Label(self.bar,image=self.logo if self.logo else '',
                        text='' if self.logo else 'MF',bg=bg,fg='#ffffff',
                        font=('Segoe UI',12,'bold'),borderwidth=0,highlightthickness=0)
         self.badge=badge
-        badge.pack(side='left',padx=(18,14))
+        badge.pack(side='left',padx=(14,10) if compact else (18,14))
         text=tk.Frame(self.bar,bg=bg)
-        text.pack(side='left',fill='y',pady=(10,10))
-        title=tk.Label(text,text=TITLE,bg=bg,fg='#e5e8ef',font=('Segoe UI Semibold',14),anchor='w')
-        title.pack(anchor='w')
-        subtitle=tk.Label(text,text=SUBTITLE,bg=bg,fg='#8f98aa',font=('Segoe UI',9),anchor='w')
-        subtitle.pack(anchor='w')
-        for label,command,hover in [('×',on_close,'#b83c50'),('□',self.toggle_maximize,'#30394a'),('−',self.minimize,'#30394a')]:
+        text.pack(side='left',fill='y',pady=(0,0) if compact else (10,10))
+        title_label=tk.Label(text,text=title,bg=bg,fg='#e5e8ef',anchor='w',
+                             font=('Segoe UI Semibold',11 if compact else 14))
+        title_label.pack(anchor='w',expand=compact,fill='y' if compact else None)
+        self.title_label=title_label
+        draggable=[self.bar,badge,text,title_label]
+        if not compact:
+            subtitle_label=tk.Label(text,text=subtitle,bg=bg,fg='#8f98aa',font=('Segoe UI',9),anchor='w')
+            subtitle_label.pack(anchor='w')
+            draggable.append(subtitle_label)
+        self.maximize_button=None
+        self.pin_button=None
+        self.pinned=False
+        self.normal_geometry=None
+        self.zoomed=None
+        buttons=[('×',on_close,'#b83c50')]
+        if not compact:buttons+=[('□',self.toggle_maximize,'#30394a'),('−',self.minimize,'#30394a')]
+        for label,command,hover in buttons:
             button=tk.Button(self.bar,text=label,command=command,bg=bg,fg='#b8c5db',
                              activebackground=hover,activeforeground='#ffffff',relief='flat',
                              borderwidth=0,highlightthickness=0,font=('Segoe UI',14),width=4,takefocus=True)
-            button.pack(side='right',anchor='n',ipady=2)
+            button.pack(side='right',anchor='n',fill='y' if compact else None,ipady=0 if compact else 2)
             button.bind('<Enter>',lambda event,b=button,c=hover:b.configure(bg=c))
             button.bind('<Leave>',lambda event,b=button:b.configure(bg=bg))
             if label=='□':self.maximize_button=button
+            if label=='×':self.close_button=button
+        for widget in draggable:
+            widget.bind('<ButtonPress-1>',self.move)
+            widget.bind('<Button-3>',self.system_menu)
+            if not compact:widget.bind('<Double-Button-1>',self.toggle_maximize)
+        root.bind('<Map>',self.mapped,add='+')
+        root.bind('<Configure>',self.configured,add='+')
+        if compact:return
         # Pin: keep the window above other apps (e.g. Unreal) while it renders.
-        self.pinned=False
-        self.bg=bg
         self.pin_icon=tk.BitmapImage(master=root,data=PIN_BITMAP,foreground='#b8c5db')
         self.pinned_icon=tk.BitmapImage(master=root,data=PIN_BITMAP,foreground='#ffffff')
         slot=tk.Frame(self.bar,bg=bg,width=button.winfo_reqwidth(),height=button.winfo_reqheight()+4)
@@ -60,14 +84,6 @@ class WindowChrome:
         self.pin_button.place(relwidth=1,relheight=1)
         self.pin_button.bind('<Enter>',lambda event:self.pin_button.configure(bg='#30394a' if not self.pinned else PIN_ACTIVE))
         self.pin_button.bind('<Leave>',lambda event:self._paint_pin())
-        self.normal_geometry=None
-        for widget in (self.bar,badge,text,title,subtitle):
-            widget.bind('<ButtonPress-1>',self.move)
-            widget.bind('<Double-Button-1>',self.toggle_maximize)
-            widget.bind('<Button-3>',self.system_menu)
-        root.bind('<Map>',self.mapped,add='+')
-        root.bind('<Configure>',self.configured,add='+')
-        self.zoomed=None
 
     def _windows(self):
         import ctypes
@@ -103,7 +119,7 @@ class WindowChrome:
     def set_pinned(self,pinned):
         self.pinned=bool(pinned)
         self.root.attributes('-topmost',self.pinned)
-        self._paint_pin()
+        if self.pin_button:self._paint_pin()
 
     def _paint_pin(self):
         self.pin_button.configure(image=self.pinned_icon if self.pinned else self.pin_icon,
@@ -116,7 +132,8 @@ class WindowChrome:
         if state=='normal':self.normal_geometry=self.root.geometry()
         zoomed=state=='zoomed'
         if zoomed!=self.zoomed:
-            self.zoomed=zoomed;self.maximize_button.configure(text='❐' if zoomed else '□')
+            self.zoomed=zoomed
+            if self.maximize_button:self.maximize_button.configure(text='❐' if zoomed else '□')
 
     def minimize(self):self.root.iconify()
 

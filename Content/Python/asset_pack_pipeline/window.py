@@ -137,6 +137,9 @@ class PipelineWindow(GuidedWindow):
         self.external = api_adapter is not None
         self.tk, self.ttk, self.api = tk, ttk, api_adapter if self.external else api
         self.root = tk.Tk(className='AssetPackPipeline')
+        # Hidden and transparent until built and placed: no white first frame.
+        self.root.withdraw()
+        self.root.attributes('-alpha', 0.0)
         self.root.title(f'MESHFLOW Asset Pack Pipeline v{__version__}')
         self.root.geometry('1200x860')
         self.root.minsize(1100, 800)
@@ -187,6 +190,12 @@ class PipelineWindow(GuidedWindow):
             unreal.parent_external_window_to_slate(int(self.root.wm_frame(), 0))
         if pump:
             self.tick_handle = unreal.register_slate_post_tick_callback(self._tick)
+        if not self.external:
+            # Custom UI (external) shows itself after restoring its saved placement.
+            from . import dark_dialog
+            dark_dialog.center(self.root, 1200, 860)
+            self.root.deiconify()
+            dark_dialog.fade_in(self.root)
 
     # Windows virtual-key codes -> Tk virtual events. Tk matches <Control-a> by
     # keysym, which is Cyrillic in the Russian layout, so Ctrl+A/C/V/X/Z/Y did nothing.
@@ -212,6 +221,9 @@ class PipelineWindow(GuidedWindow):
         s.configure('Muted.TLabel', foreground='#a1a9ba')
         s.configure('Hero.TLabel', font=('Segoe UI Semibold', 21), background='#17191e')
         s.configure('Subtitle.TLabel', foreground='#a1a9ba', background='#17191e')
+        # Dialog surfaces (dark_dialog.BG) share the shell background.
+        s.configure('Dialog.TLabel', foreground='#e5e8ef', background='#17191e')
+        s.configure('DialogMuted.TLabel', foreground='#a1a9ba', background='#17191e')
         s.configure('TLabelframe', background='#20232b', bordercolor='#363b47',
                     lightcolor='#363b47', darkcolor='#363b47', relief='solid')
         s.configure('TLabelframe.Label', foreground='#a9bded', background='#20232b', font=('Segoe UI Semibold', 10))
@@ -239,6 +251,8 @@ class PipelineWindow(GuidedWindow):
         s.map('TCheckbutton', background=[('active', '#20232b')],
               indicatorbackground=[('selected', '#3975da'), ('!selected', '#15181f')],
               foreground=[('disabled', '#758094'), ('!disabled', '#e5e8ef')])
+        s.configure('Dialog.TCheckbutton', background='#17191e', focuscolor='#17191e')
+        s.map('Dialog.TCheckbutton', background=[('active', '#17191e')])
         s.configure('TNotebook', background='#17191e', borderwidth=0,
                     lightcolor='#363b47', darkcolor='#363b47', bordercolor='#363b47')
         s.configure('TNotebook.Tab', padding=(12, 10), background='#17191e',

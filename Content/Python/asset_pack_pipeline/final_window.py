@@ -5,38 +5,49 @@ import uuid
 
 class FinalWindow:
     def scan_content(self):
-        try:
+        from . import dark_dialog as dd
+        external = getattr(self, 'external', False)
+        def fetch():
             from collections import Counter
             if self.api.readiness()['active_run']:
                 raise RuntimeError('Дождитесь завершения задачи.')
-            if getattr(self,'external',False):
-                counts=self.api.content_folders()
-            else:
-                import unreal as u
-                assets = u.EditorAssetLibrary.list_assets('/Game', recursive=True, include_folder=False)
-                counts = Counter('/'.join(str(path).split('.') [0].split('/')[:3]) for path in assets if len(str(path).split('/'))>3)
-            dialog = self.tk.Toplevel(self.root)
-            dialog.title('Content · Выберите папку для очистки')
-            dialog.geometry('760x520')
-            dialog.configure(bg='#20232b')
-            dialog.transient(self.root)
-            self.ttk.Label(dialog, text='Папки текущего проекта', style='Hero.TLabel').pack(anchor='w', padx=18, pady=18)
-            self.ttk.Label(dialog, text='Выбор не зависит от профиля. На следующем шаге будет список удаления.\n'
-                'Presentation защищена. Исходники на диске и поставки не удаляются.', style='Muted.TLabel').pack(anchor='w', padx=18)
-            table = self.ttk.Treeview(dialog, columns=('folder','count'), show='headings', selectmode='browse')
+            if external:
+                return self.api.content_folders()
+            import unreal as u
+            assets = u.EditorAssetLibrary.list_assets('/Game', recursive=True, include_folder=False)
+            return Counter('/'.join(str(path).split('.') [0].split('/')[:3]) for path in assets if len(str(path).split('/'))>3)
+        dialog = dd.Dialog(self.root, 'Content · Выберите папку для очистки', 780, 540, minsize=(620, 420),
+                           loading='Сканирование папок Content…')
+        def build(counts):
+            t, body = self.ttk, dialog.content
+            head = self.tk.Frame(body, bg=dd.BG)
+            head.pack(fill='x', padx=20, pady=(16, 0))
+            t.Label(head, text='Папки текущего проекта', style='Hero.TLabel').pack(anchor='w')
+            t.Label(head, text='Выбор не зависит от профиля. На следующем шаге будет список удаления.\n'
+                    'Presentation защищена. Исходники на диске и поставки не удаляются.', style='Subtitle.TLabel').pack(anchor='w', pady=(4, 0))
+            bar = self.tk.Frame(body, bg=dd.PANEL)
+            bar.pack(fill='x', side='bottom')
+            table = t.Treeview(body, columns=('folder','count'), show='headings', selectmode='browse')
             table.heading('folder', text='Content / папка'); table.heading('count', text='Ассетов')
-            table.column('folder', width=520); table.column('count', width=100)
-            table.pack(fill='both', expand=True, padx=18, pady=12)
+            table.column('folder', width=540); table.column('count', width=100, anchor='e')
+            table.pack(fill='both', expand=True, padx=20, pady=14)
             for root, count in sorted(counts.items()):
                 table.insert('', 'end', iid=root, values=(root, count))
-            def select():
+            if not counts:
+                table.insert('', 'end', values=('В /Game нет ассетов', ''))
+            def select(event=None):
                 selected = table.selection()
-                if selected:
+                if selected and selected[0] in counts:
                     root = selected[0]
                     self.review_import_cleanup(root, root.rsplit('/',1)[-1], True)
-            self.ttk.Button(dialog, text='Просмотреть план очистки выбранной папки…', command=select).pack(anchor='w', padx=18, pady=12)
-        except Exception as error:
-            self._callback_error(type(error), error, error.__traceback__)
+            open_plan = dd.button(bar, 'Просмотреть план очистки выбранной папки…', select, accent=True)
+            open_plan.pack(side='left', padx=16, pady=12)
+            dd.enable(open_plan, False)
+            table.bind('<<TreeviewSelect>>', lambda event: dd.enable(
+                open_plan, bool(table.selection()) and table.selection()[0] in counts))
+            table.bind('<Double-1>', select)
+            dd.button(bar, 'Закрыть', dialog.close).pack(side='right', padx=16, pady=12)
+        dialog.load(fetch, build, threaded=external)
 
     def build_final_options(self, parent):
         t = self.ttk
@@ -142,29 +153,53 @@ class FinalWindow:
             self._callback_error(type(error), error, error.__traceback__)
 
     def review_import_cleanup(self, selected_root=None, selected_pack=None, folder_scope=False):
-        try:
+        from . import cleanup, dark_dialog as dd
+        external = getattr(self, 'external', False)
+        pack = selected_pack or self.variables['pack_id'].get().strip()
+        root = selected_root or (self.variables['destination_root'].get().strip().rstrip('/') if self.mode.get() == 'Профессиональный' else '/Game/'+pack)
+        manifest = {'profile': {'pack_id':pack, 'destination_root':root}}
+        def fetch():
             if self.api.readiness()['active_run'] or getattr(self, 'guide_session', None) and not self.guide_session.done:
                 raise RuntimeError('Завершите текущую задачу перед очисткой.')
-            from . import cleanup
-            pack = selected_pack or self.variables['pack_id'].get().strip()
-            root = selected_root or (self.variables['destination_root'].get().strip().rstrip('/') if self.mode.get() == 'Профессиональный' else '/Game/'+pack)
-            manifest = {'profile': {'pack_id':pack, 'destination_root':root}}
-            proposal = self.api.plan_imported_cleanup(manifest,folder_scope=folder_scope) if getattr(self,'external',False) else cleanup.plan(manifest, imported=True, folder_scope=folder_scope)
-            dialog = self.tk.Toplevel(self.root)
-            dialog.title('План очистки импортированного пака')
-            dialog.geometry('900x580')
-            dialog.transient(self.root)
-            text = self.tk.Text(dialog, wrap='word', bg='#14171d', fg='#bbc7dd', padx=12, pady=12)
-            text.pack(fill='both', expand=True)
-            text.insert('end', f"Пак: {pack}\nКаталог: {root}\nУдалить: {proposal['delete_count']}; сохранить: {proposal['retained_count']}\n\n"
-                + ('ВНИМАНИЕ: выбран режим очистки папки Content. Включены поддерживаемые ассеты БЕЗ меток плагина.\n\n' if folder_scope else '') +
-                'Текущая открытая карта и ассеты с внешними ссылками сохраняются. Для полной очистки сначала откройте L_Presentation.\n'
-                'Перед удалением создаётся резервная копия в Saved/AssetPackPipeline/ImportedCleanup. Исходные FBX/GLB, поставки и PNG не затрагиваются.\n\n'+
-                '\n'.join(('УДАЛИТЬ  ' if row['can_delete'] else 'СОХРАНИТЬ  ')+row['id']+' — '+row['reason'] for row in proposal['assets']))
+            return (self.api.plan_imported_cleanup(manifest,folder_scope=folder_scope) if external
+                    else cleanup.plan(manifest, imported=True, folder_scope=folder_scope))
+        holder = dd.Dialog(self.root, 'План очистки импортированного пака', 940, 620, minsize=(700, 460),
+                           loading='Составление плана очистки…')
+        dialog = holder.window
+        def build(proposal):
+            body = holder.content
+            summary = self.tk.Frame(body, bg=dd.BG)
+            summary.pack(fill='x', padx=20, pady=(16, 8))
+            self.ttk.Label(summary, text=f"{pack}  ·  {root}", style='Hero.TLabel').pack(anchor='w')
+            self.ttk.Label(summary, text=f"Удалить: {proposal['delete_count']}   ·   Сохранить: {proposal['retained_count']}",
+                           style='Subtitle.TLabel').pack(anchor='w', pady=(4, 0))
+            if folder_scope:
+                self.tk.Label(summary, text='Режим очистки папки Content: включены поддерживаемые ассеты БЕЗ меток плагина.',
+                              bg=dd.BG, fg='#ffb36b', anchor='w', font=('Segoe UI', 10)).pack(anchor='w', pady=(6, 0))
+            bar = self.tk.Frame(body, bg=dd.PANEL)
+            bar.pack(fill='x', side='bottom')
+            frame = self.tk.Frame(body, bg=dd.BG)
+            frame.pack(fill='both', expand=True, padx=20, pady=(4, 14))
+            text = self.tk.Text(frame, wrap='word', bg='#14171d', fg='#bbc7dd', padx=12, pady=12, relief='flat',
+                                borderwidth=0, highlightthickness=0, font=('Consolas', 10), insertbackground='#bbc7dd')
+            scroll = self.ttk.Scrollbar(frame, orient='vertical', command=text.yview)
+            text.configure(yscrollcommand=scroll.set)
+            scroll.pack(side='right', fill='y')
+            text.pack(side='left', fill='both', expand=True)
+            text.tag_configure('delete', foreground='#ff9d9d')
+            text.tag_configure('keep', foreground='#9cdbb2')
+            text.tag_configure('muted', foreground='#8f98aa')
+            text.insert('end', 'Текущая открытая карта и ассеты с внешними ссылками сохраняются. Для полной очистки сначала откройте L_Presentation.\n'
+                        'Перед удалением создаётся резервная копия в Saved/AssetPackPipeline/ImportedCleanup. '
+                        'Исходные FBX/GLB, поставки и PNG не затрагиваются.\n\n', 'muted')
+            for row in proposal['assets']:
+                text.insert('end', 'УДАЛИТЬ    ' if row['can_delete'] else 'СОХРАНИТЬ  ', 'delete' if row['can_delete'] else 'keep')
+                text.insert('end', row['id']+' — '+row['reason']+'\n')
             text.configure(state='disabled')
             def apply():
-                from tkinter import messagebox
-                if not messagebox.askyesno('Подтверждение удаления', f"Удалить {proposal['delete_count']} перечисленных ассетов из {root}?", parent=dialog):
+                if not dd.confirm(dialog, 'Подтверждение удаления',
+                                  f"Удалить {proposal['delete_count']} перечисленных ассетов из {root}?\n\n"
+                                  'Перед удалением будет создана резервная копия.', ok_text='Удалить', danger=True):
                     return
                 try:
                     if self.api.readiness()['active_run'] or getattr(self, 'guide_session', None) and not self.guide_session.done:
@@ -176,11 +211,11 @@ class FinalWindow:
                     (folder/'result.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
                     self._log('Очистка импортированного пака: '+str(folder))
                     self.state_label.configure(text=f"Удалено: {result['deleted_count']}; сохранено: {result['retained_count']}")
-                    dialog.destroy()
+                    holder.close()
                 except Exception as error:
                     self._callback_error(type(error), error, error.__traceback__)
-            self.ttk.Button(dialog, text='Удалить перечисленные ассеты…', command=apply,
-                            state='normal' if proposal['delete_count'] else 'disabled').pack(side='left', padx=12, pady=12)
-            self.ttk.Button(dialog, text='Закрыть', command=dialog.destroy).pack(side='right', padx=12, pady=12)
-        except Exception as error:
-            self._callback_error(type(error), error, error.__traceback__)
+            delete = dd.button(bar, 'Удалить перечисленные ассеты…', apply, danger=True)
+            delete.pack(side='left', padx=16, pady=12)
+            dd.enable(delete, bool(proposal['delete_count']))
+            dd.button(bar, 'Закрыть', holder.close).pack(side='right', padx=16, pady=12)
+        holder.load(fetch, build, threaded=external)

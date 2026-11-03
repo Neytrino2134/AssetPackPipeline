@@ -7,16 +7,22 @@ from . import ai_settings, assistant
 class AISettingsWindow:
     def open_ai_settings(self):
         if getattr(self, 'ai_dialog', None) and self.ai_dialog.winfo_exists():
+            self.ai_dialog.deiconify()
             self.ai_dialog.lift()
+            self.ai_dialog.focus_force()
             return
+        from . import dark_dialog as dd
+        holder = dd.Dialog(self.root, 'Настройки AI · OpenAI', 740, 560, minsize=(680, 500),
+                           loading='Чтение настроек OpenAI…')
+        self.ai_dialog = holder.window
+        holder.load(assistant.has_key, lambda connected: self._build_ai_settings(holder, connected), threaded=True)
+
+    def _build_ai_settings(self, holder, connected):
+        from . import dark_dialog as dd
         t, tk = self.ttk, self.tk
-        dialog = self.ai_dialog = tk.Toplevel(self.root)
-        dialog.title('Настройки AI · OpenAI')
-        dialog.geometry('720x490')
-        dialog.minsize(680, 450)
-        dialog.configure(bg='#17191e')
-        dialog.transient(self.root)
-        shell = t.Frame(dialog, padding=22)
+        bar = tk.Frame(holder.content, bg=dd.PANEL)
+        bar.pack(fill='x', side='bottom')
+        shell = t.Frame(holder.content, padding=22, style='Shell.TFrame')
         shell.pack(fill='both', expand=True)
         t.Label(shell, text='Подключение OpenAI', style='Hero.TLabel').pack(anchor='w', pady=(0, 16))
         t.Label(shell, text='API-ключ', style='Subtitle.TLabel').pack(anchor='w')
@@ -25,30 +31,31 @@ class AISettingsWindow:
         entry.pack(fill='x', pady=7)
         # Never populate a widget with an existing secret.
         t.Label(shell, text='Оставьте пустым, чтобы использовать текущий ключ или OPENAI_API_KEY.',
-                style='Muted.TLabel').pack(anchor='w')
+                style='DialogMuted.TLabel').pack(anchor='w')
         remember = self.ai_remember = tk.BooleanVar(value=False)
         t.Checkbutton(shell, text='Запомнить ключ на этом компьютере (защита Windows DPAPI)',
-                      variable=remember).pack(anchor='w', pady=10)
+                      variable=remember, style='Dialog.TCheckbutton').pack(anchor='w', pady=10)
         t.Label(shell, text='Без отметки новый ключ действует до закрытия Unreal. В проект и ZIP ключ не попадает.',
-                style='Muted.TLabel', wraplength=650).pack(anchor='w')
+                style='DialogMuted.TLabel', wraplength=650).pack(anchor='w')
         t.Label(shell, text='Модель', style='Subtitle.TLabel').pack(anchor='w', pady=(18, 6))
         self.ai_settings_model = tk.StringVar(value=self.ai_model.get())
         self.ai_model_menu = t.Combobox(shell, textvariable=self.ai_settings_model, values=ai_settings.MODELS)
         self.ai_model_menu.pack(fill='x')
         t.Label(shell, text='Sol — баланс · Astra — сложные задачи · Terra — скорость · Luna — экономичный вариант.\n'
                 'Каталог проверен 31.10.2026. ID можно ввести вручную. Доступ зависит от аккаунта.',
-                style='Muted.TLabel', wraplength=650).pack(anchor='w', pady=8)
-        self.ai_settings_status = t.Label(shell, text='Ключ подключён.' if assistant.has_key() else 'Ключ ещё не подключён.',
-                                           wraplength=650, style='Muted.TLabel')
+                style='DialogMuted.TLabel', wraplength=650).pack(anchor='w', pady=8)
+        self.ai_settings_status = t.Label(shell, text='Ключ подключён.' if connected else 'Ключ ещё не подключён.',
+                                           wraplength=650, style='DialogMuted.TLabel')
         self.ai_settings_status.pack(anchor='w', pady=8)
-        row = t.Frame(shell)
-        row.pack(fill='x', side='bottom', pady=(12, 0))
-        self.ai_models_button = t.Button(row, text='Проверить ключ / обновить модели', command=self.ai_refresh_models)
-        self.ai_models_button.pack(side='left')
-        t.Button(row, text='Забыть ключ', command=self.ai_forget_key).pack(side='left', padx=8)
-        t.Button(row, text='Применить', style='Accent.TButton', command=self.ai_save_settings).pack(side='right')
+        self.ai_models_button = dd.button(bar, 'Проверить ключ / обновить модели', self.ai_refresh_models)
+        self.ai_models_button.pack(side='left', padx=(16, 0), pady=12)
+        dd.button(bar, 'Забыть ключ', self.ai_forget_key).pack(side='left', padx=8, pady=12)
+        dd.button(bar, 'Закрыть', holder.close).pack(side='right', padx=(8, 16), pady=12)
+        dd.button(bar, 'Применить', self.ai_save_settings, accent=True).pack(side='right', pady=12)
         self.ai_settings_queue = queue.Queue()
-        dialog.protocol('WM_DELETE_WINDOW', lambda: (secret.set(''), dialog.destroy()))
+        # Never keep a typed secret after the window closes.
+        holder.on_close = lambda: secret.set('')
+        entry.focus_set()
 
     def ai_save_settings(self):
         try:
@@ -73,7 +80,8 @@ class AISettingsWindow:
             self.ai_settings_status.configure(text='Сначала введите API-ключ.')
             return
         output = self.ai_settings_queue
-        self.ai_models_button.configure(state='disabled')
+        from . import dark_dialog as dd
+        dd.enable(self.ai_models_button, False)
         self.ai_settings_status.configure(text='Проверка ключа и загрузка доступных моделей…')
         def work():
             try:
@@ -85,11 +93,14 @@ class AISettingsWindow:
     def ai_settings_poll(self):
         if not getattr(self, 'ai_dialog', None) or not self.ai_dialog.winfo_exists():
             return
+        if not getattr(self, 'ai_settings_queue', None):
+            return  # still loading
         try:
             ok, result = self.ai_settings_queue.get_nowait()
         except queue.Empty:
             return
-        self.ai_models_button.configure(state='normal')
+        from . import dark_dialog as dd
+        dd.enable(self.ai_models_button, True)
         if ok:
             self.ai_model_menu.configure(values=result)
             self.ai_settings_status.configure(text=f'API-ключ принят. Доступных моделей известных семейств: {len(result)}. '

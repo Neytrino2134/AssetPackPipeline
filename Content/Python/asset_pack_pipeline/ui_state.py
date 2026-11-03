@@ -51,6 +51,7 @@ def capture(window):
         'guide_step': getattr(window, 'guide_step', 0),
         'guide': {'variants': _value(window.guide_variants), 'lod': _value(window.guide_lod),
                   'finalize': _value(window.guide_finalize),
+                  'smart_normals': _value(getattr(window, 'guide_smart_normals', None)),
                   'renders': {k: _value(v) for k, v in window.guide_renders.items()},
                   'view_modes': {k: _value(v) for k, v in getattr(window, 'guide_view_modes', {}).items()}},
         'profile_path': str(window.profile_path) if window.profile_path else None,
@@ -122,6 +123,8 @@ def restore(window, state):
     _assign(window.guide_variants, guide.get('variants'))
     _assign(window.guide_lod, guide.get('lod'))
     _assign(window.guide_finalize, guide.get('finalize'))
+    if getattr(window, 'guide_smart_normals', None) is not None:
+        _assign(window.guide_smart_normals, guide.get('smart_normals'))
     for group, values in (('guide_renders', guide.get('renders')), ('guide_view_modes', guide.get('view_modes'))):
         for key, value in (values or {}).items():
             var = getattr(window, group, {}).get(key)

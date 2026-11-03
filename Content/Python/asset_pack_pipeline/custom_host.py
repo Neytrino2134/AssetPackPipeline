@@ -151,7 +151,8 @@ class CustomWindow(PipelineWindow):
                 paths[variant]=str(path)
                 plan=self.api.plan(str(path))
                 if not plan['ready']:raise RuntimeError(str(plan['conflicts']))
-                self._log(f"{variant}: {len(plan['assets'])} моделей")
+                from .guided import normal_summary
+                self._log(f"{variant}: {len(plan['assets'])} моделей. {normal_summary(plan['assets'])}")
             if start:self.api.start_guided(paths,steps)
             return {'status':'started' if start else 'sources_checked','completed':False}
         except Exception as error:

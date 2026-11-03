@@ -390,8 +390,9 @@ class PipelineWindow(GuidedWindow):
         t.Label(maps, text='ORM: R=AO, G=Roughness, B=Metallic. Можно использовать {asset_id} в пути.\n'
                            'С ORM Roughness умножает канал G; Metallic берётся из B.',
                 style='Muted.TLabel').grid(row=6, column=0, columnspan=3, sticky='w', padx=12, pady=5)
-        self._field(maps, 7, 'normal_map_convention', 'Формат карты нормалей', 'OpenGL', ['OpenGL', 'DirectX'])
-        t.Label(maps, text='OpenGL (Y+): Blender, glTF — Unreal переворачивает канал G. DirectX (Y−): без изменений.',
+        self._field(maps, 7, 'normal_map_convention', 'Формат карты нормалей', 'Auto', ['Auto', 'OpenGL', 'DirectX'])
+        t.Label(maps, text='Auto: по меткам MeshInfo и суффиксам _DirectX/_DX, _OpenGL/_GL; без метки — OpenGL.\n'
+                           'OpenGL (Y+): Blender, glTF — канал G переворачивается. DirectX (Y−): без изменений.',
                 style='Muted.TLabel').grid(row=8, column=0, columnspan=3, sticky='w', padx=12, pady=5)
         self.settings_button = t.Button(maps, text='Обновить материалы и настройки без импорта мешей',
                                        command=lambda: self.execute('settings'))

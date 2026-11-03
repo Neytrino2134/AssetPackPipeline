@@ -28,6 +28,7 @@ class GuidedWindow(AssistantWindow, FinalWindow):
         self.guide_variants = tk.StringVar(value='LOD + MID / Nanite')
         self.guide_lod = tk.StringVar(value='0')
         self.guide_finalize = tk.BooleanVar(value=True)
+        self.guide_smart_normals = tk.BooleanVar(value=True)
         self.guide_renders = {name: tk.BooleanVar(value=name == 'overview')
                               for name in ('overview', 'MID', 'LOW', 'LODS', 'selected')}
         self.guide_view_modes={name:tk.BooleanVar(value=False) for name in ('wireframe','collision_pawn','overview','MID','LOW')}
@@ -47,6 +48,11 @@ class GuidedWindow(AssistantWindow, FinalWindow):
         t.Label(source, text='Предпочтительный формат').grid(row=2, column=0, sticky='w', pady=6)
         t.Combobox(source, textvariable=self.variables['source_format'], values=('FBX', 'GLB'),
                    state='readonly', width=10).grid(row=2, column=1, sticky='w')
+        t.Checkbutton(source, text='Умное конвертирование Normal текстур',
+                      variable=self.guide_smart_normals).grid(row=3, column=0, columnspan=3, sticky='w', pady=(6, 0))
+        t.Label(source, text='Метка DirectX/DX в MeshInfo или имени файла — без изменений; OpenGL или без метки — '
+                             'канал G переворачивается для Unreal.', style='Muted.TLabel', wraplength=420,
+                justify='left').grid(row=4, column=0, columnspan=3, sticky='w')
         t.Label(meshes, text='Какие версии подготовить?').pack(side='left', padx=(0, 18))
         t.Combobox(meshes, textvariable=self.guide_variants, state='readonly', width=28,
                    values=('LOD + MID / Nanite', 'Только LOD', 'Только MID / Nanite')).pack(side='left')
@@ -146,7 +152,8 @@ class GuidedWindow(AssistantWindow, FinalWindow):
                               [k for k, v in self.guide_renders.items() if v.get()], int(self.guide_lod.get()),
                               self.guide_finalize.get(), self.variables['delivery_output_directory'].get().strip(),
                               view_modes=[name for name,value in self.guide_view_modes.items() if value.get() and name in ('wireframe','collision_pawn')],
-                              diagnostic_targets=[name for name in ('overview','MID','LOW') if self.guide_view_modes[name].get()])
+                              diagnostic_targets=[name for name in ('overview','MID','LOW') if self.guide_view_modes[name].get()],
+                              smart_normals=self.guide_smart_normals.get())
 
     def guide_run(self, start, raise_errors=False):
         try:
@@ -163,7 +170,7 @@ class GuidedWindow(AssistantWindow, FinalWindow):
                 plan = self.api.plan(str(path))
                 if not plan['ready']:
                     raise RuntimeError(variant+': '+str(plan.get('conflicts', 'исходники не готовы')))
-                self._log(f"{variant}: {len(plan['assets'])} моделей; профиль {path}")
+                self._log(f"{variant}: {len(plan['assets'])} моделей; {guided.normal_summary(plan['assets'])}; профиль {path}")
             self.state_label.configure(text='Исходники проверены • '+str(folder))
             if start:
                 self.guide_session = guided.Session(self.api, paths, steps)

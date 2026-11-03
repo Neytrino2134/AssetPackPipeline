@@ -1,9 +1,11 @@
-# Asset Pack Pipeline 0.30.3
+# Asset Pack Pipeline 0.31.0
 
-Normal maps default to the OpenGL (Y+) convention used by Blender and glTF; the
-importer enables Flip Green Channel so UV island borders no longer show lighting
-seams. Set `normal_map_convention` to `DirectX` for Y- maps. Existing packs are fixed
-with «Обновить материалы и настройки без импорта мешей».
+Smart Normal conversion (Quick Start → «1. Исходники», on by default): the importer
+reads MeshInfo texture entries (`convention`, `preferred`, `unreal.flip_green_channel`)
+and `_DirectX/_DX`, `_OpenGL/_GL` file suffixes. DirectX maps are imported as-is;
+OpenGL or unlabeled (Blender) maps get Flip Green Channel. Older MeshInfo files,
+including FBX/MeshInfo.json with folder-relative paths, are still read.
+Existing packs are fixed with «Обновить материалы и настройки без импорта мешей».
 
 Model IDs in MeshInfo may start with a digit (e.g. 52_Ruini_Skali_Pesok_01_01);
 Unreal asset names keep their SM_/MI_/T_ prefixes.

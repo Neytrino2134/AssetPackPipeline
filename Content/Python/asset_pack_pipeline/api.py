@@ -136,8 +136,8 @@ def start(profile_path, settings_only=False, resumed_from=None):
         if manifest['profile_hash'] != old['profile_hash'] or manifest['source_hashes'] != old['source_hashes']:
             raise RuntimeError('Frozen profile or source files changed; start a new job instead of resuming')
         def selected_contract(assets):
-            return [{key: asset[key] for key in ('id', 'mesh_path', 'lods', 'textures', 'effective_settings')}
-                    for asset in assets]
+            return [{key: asset.get(key) for key in ('id', 'mesh_path', 'lods', 'textures', 'effective_settings',
+                                                     'normal_convention')} for asset in assets]
         if selected_contract(manifest['assets']) != selected_contract(old['assets']):
             raise RuntimeError('Selected asset mapping or MeshInfo changed since interrupted run')
     if settings_only:
@@ -438,7 +438,7 @@ def create_review_candidate(import_run_id):
     path.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding='utf-8')
     try:
         current = discovery.scan(path)
-        keys = ('id','mesh_path','lods','textures','effective_settings','source_kind')
+        keys = ('id','mesh_path','lods','textures','effective_settings','source_kind','normal_convention')
         previous = [{k:a.get(k) for k in keys} for a in manifest['assets'] if a['id'] in accepted]
         if previous != [{k:a.get(k) for k in keys} for a in current['assets']]:
             raise RuntimeError('MeshInfo source mapping changed; reimport before selecting a candidate')

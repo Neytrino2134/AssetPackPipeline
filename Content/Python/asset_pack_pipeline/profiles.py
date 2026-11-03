@@ -20,14 +20,20 @@ def convex_settings(profile):
     return result
 
 
-NORMAL_CONVENTIONS = ('OpenGL', 'DirectX')
+# Auto: decide per texture from MeshInfo labels / file suffixes (discovery.normal_source).
+NORMAL_CONVENTIONS = ('Auto', 'OpenGL', 'DirectX')
 
 
-def flip_normal_green(profile):
+def flip_normal_green(profile, asset=None):
     """Unreal samples DirectX (Y-) tangent-space normals. Blender, glTF and most
     bakers write OpenGL (Y+); importing those unflipped lights UV islands
-    inconsistently, which shows up as seams along UV borders."""
-    return profile.get('normal_map_convention', 'OpenGL') == 'OpenGL'
+    inconsistently, which shows up as seams along UV borders. The scan records the
+    convention of the chosen file; unlabeled sources count as OpenGL."""
+    convention = (asset or {}).get('normal_convention')
+    if convention is None:
+        mode = profile.get('normal_map_convention', 'Auto')
+        convention = mode if mode in ('OpenGL', 'DirectX') else 'OpenGL'
+    return convention == 'OpenGL'
 
 
 def validate_settings(profile):
@@ -61,8 +67,8 @@ def validate_settings(profile):
             raise ValueError(f'{key} must be a finite number in [{low}, {high}]')
     if not isinstance(profile.get('orm_texture', ''), str):
         raise ValueError('orm_texture must be a relative path string or empty')
-    if profile.get('normal_map_convention', 'OpenGL') not in NORMAL_CONVENTIONS:
-        raise ValueError('normal_map_convention must be OpenGL or DirectX')
+    if profile.get('normal_map_convention', 'Auto') not in NORMAL_CONVENTIONS:
+        raise ValueError('normal_map_convention must be Auto, OpenGL or DirectX')
 
 
 def effective(profile, asset_id):

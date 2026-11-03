@@ -5,7 +5,8 @@ import re
 from pathlib import Path
 
 
-def prepare(base, source, pack, fmt, variants='both', renders=(), lod=0, finalize=False, output='', view_modes=(), diagnostic_targets=None):
+def prepare(base, source, pack, fmt, variants='both', renders=(), lod=0, finalize=False, output='', view_modes=(), diagnostic_targets=None,
+            smart_normals=True):
     from . import render_views
     view_modes=render_views.settings(view_modes)
     lit_targets = set(renders)
@@ -33,7 +34,10 @@ def prepare(base, source, pack, fmt, variants='both', renders=(), lod=0, finaliz
         p.update(pack_id=pack, source_root=str(Path(source).resolve()), source_format=fmt,
                  destination_root='/Game/'+pack, mesh_subdirectory=variant,
                  nanite_enabled=variant == 'Nanite', nanite_source='AUTO', validation_policy='warn',
-                 texture_directory=fmt+'/Textures', asset_overrides={}, skip_invalid_sources=False)
+                 texture_directory=fmt+'/Textures', asset_overrides={}, skip_invalid_sources=False,
+                 # Smart: convert Normal maps unless MeshInfo/suffix marks them DirectX.
+                 # Off: import Normal maps exactly as they are (treated as DirectX).
+                 normal_map_convention='Auto' if smart_normals else 'DirectX')
         p['collision']='convex'
         p['overview'] = dict(p.get('overview', {}), map_name='Overview_'+pack+'_'+variant)
         p['overview'].pop('map_path_override', None)
@@ -76,7 +80,20 @@ def prepare(base, source, pack, fmt, variants='both', renders=(), lod=0, finaliz
     return profiles, steps
 
 
-RENDER_OPERATIONS = ('overview', 'preview', 'media')
+def normal_summary(assets):
+    """One journal line: which Normal maps get the green channel flipped for Unreal."""
+    flip = [a for a in assets if a.get('normal_convention') == 'OpenGL']
+    keep = [a for a in assets if a.get('normal_convention') == 'DirectX']
+    assumed = sum(a.get('normal_convention_source') == 'assumed' for a in flip)
+    parts = []
+    if keep:
+        parts.append(f'{len(keep)} DirectX — без конвертации')
+    if flip:
+        parts.append(f'{len(flip)} OpenGL — переворот канала G' + (f' (без метки: {assumed})' if assumed else ''))
+    return 'Normal: ' + '; '.join(parts) if parts else ''
+
+
+RENDER_OPERATIONS =('overview', 'preview', 'media')
 
 
 def render_steps(steps):

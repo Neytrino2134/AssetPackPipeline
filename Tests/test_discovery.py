@@ -52,6 +52,21 @@ class DiscoveryTests(unittest.TestCase):
         self.profile['validation_policy']='strict'
         with self.assertRaisesRegex(ValueError,'Missing source'):self.scan()
 
+    def test_asset_id_may_start_with_digit(self):
+        asset = '52_Ruini_Skali_Pesok_01_01'
+        for entry in self.catalog['meshes']:
+            entry.update(asset=asset, name=entry['name'].replace('Asset_01', asset))
+        for channel in ('BaseColor', 'Normal'):
+            (self.root/f'T_{asset}_{channel}.png').write_bytes(b'texture')
+        result = self.scan()
+        self.assertEqual(result['assets'][0]['id'], asset)
+        self.assertTrue(result['assets'][0]['mesh_path'].endswith('/SM_'+asset))
+        for bad in ('_Leading', 'Ruины_01', 'a-b'):
+            for entry in self.catalog['meshes']:
+                entry['asset'] = bad
+            with self.assertRaisesRegex(ValueError, 'Invalid asset id'):
+                self.scan()
+
     def test_convex_collision_is_accepted_by_scan(self):
         # Quick start / Master write collision=convex; scan must not reject it.
         self.profile.update(collision='convex',convex_collision={'hull_count':8})

@@ -7,6 +7,9 @@ import struct
 from pathlib import Path
 from . import profiles
 
+# Model IDs from MeshInfo (e.g. 52_Ruini_Skali_Pesok_01_01); see mesh_path for the SM_ prefix.
+ASSET_ID = r'[A-Za-z0-9][A-Za-z0-9_]*'
+
 
 def read_json(path):
     return json.loads(Path(path).read_text(encoding='utf-8-sig'))
@@ -95,7 +98,8 @@ def scan(profile_path):
         if entry.get('role') not in ('LOD','HIGH','MID'):
             continue
         asset = entry['asset']
-        if not re.fullmatch('[A-Za-z][A-Za-z0-9_]*', asset):
+        # Unreal names always get a prefix (SM_/MI_/T_), so a leading digit is safe.
+        if not re.fullmatch(ASSET_ID, asset):
             raise ValueError(f'Invalid asset id: {asset}')
         groups.setdefault(asset, [])
         if entry.get('role')=='LOD':groups[asset].append(entry)

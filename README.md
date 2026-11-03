@@ -1,4 +1,7 @@
-# Asset Pack Pipeline 0.30.1
+# Asset Pack Pipeline 0.30.2
+
+Model IDs in MeshInfo may start with a digit (e.g. 52_Ruini_Skali_Pesok_01_01);
+Unreal asset names keep their SM_/MI_/T_ prefixes.
 
 The plugin window journal is saved to Saved/AssetPackPipeline/Logs/journal-<date>.log
 (errors with full tracebacks). After an error, «Журнал в папке…» opens Explorer with

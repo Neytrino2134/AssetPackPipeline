@@ -760,7 +760,8 @@ class PipelineWindow(GuidedWindow):
         try:
             from . import profiles
             asset = self.variables['override_asset'].get().strip()
-            if not re.fullmatch('[A-Za-z][A-Za-z0-9_]*', asset):
+            from .discovery import ASSET_ID
+            if not re.fullmatch(ASSET_ID, asset):
                 raise ValueError('Введите ID модели из MeshInfo, например GraveStones_02_01')
             overrides = copy.deepcopy(self.base.get('asset_overrides', {}))
             if action == 'load':

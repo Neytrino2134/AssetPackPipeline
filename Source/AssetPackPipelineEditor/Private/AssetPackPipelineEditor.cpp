@@ -29,7 +29,7 @@
 #include "Styling/AppStyle.h"
 #include "Styling/SlateStyle.h"
 #include "Styling/SlateStyleRegistry.h"
-#include "Brushes/SlateVectorImageBrush.h"
+#include "Brushes/SlateImageBrush.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Widgets/SWindow.h"
 

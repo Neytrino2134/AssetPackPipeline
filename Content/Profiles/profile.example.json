@@ -40,6 +40,7 @@
   },
   "metallic": 0,
   "normal_strength": 1,
+  "normal_map_convention": "OpenGL",
   "uv_scale": 1,
   "orm_texture": "",
   "asset_overrides": {},

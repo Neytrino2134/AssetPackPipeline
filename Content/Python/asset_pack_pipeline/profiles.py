@@ -20,6 +20,16 @@ def convex_settings(profile):
     return result
 
 
+NORMAL_CONVENTIONS = ('OpenGL', 'DirectX')
+
+
+def flip_normal_green(profile):
+    """Unreal samples DirectX (Y-) tangent-space normals. Blender, glTF and most
+    bakers write OpenGL (Y+); importing those unflipped lights UV islands
+    inconsistently, which shows up as seams along UV borders."""
+    return profile.get('normal_map_convention', 'OpenGL') == 'OpenGL'
+
+
 def validate_settings(profile):
     subdir = profile.get('mesh_subdirectory', '')
     if not isinstance(subdir, str) or (subdir and not re.fullmatch(r'[A-Za-z][A-Za-z0-9_]*', subdir)):
@@ -51,6 +61,8 @@ def validate_settings(profile):
             raise ValueError(f'{key} must be a finite number in [{low}, {high}]')
     if not isinstance(profile.get('orm_texture', ''), str):
         raise ValueError('orm_texture must be a relative path string or empty')
+    if profile.get('normal_map_convention', 'OpenGL') not in NORMAL_CONVENTIONS:
+        raise ValueError('normal_map_convention must be OpenGL or DirectX')
 
 
 def effective(profile, asset_id):

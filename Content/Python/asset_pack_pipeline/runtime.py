@@ -125,6 +125,8 @@ def import_file(filename, folder, name='', options=None, factory=None):
 
 
 def _textures(manifest, asset):
+    from . import profiles
+    flip_green = profiles.flip_normal_green(manifest['profile'])
     pack = manifest['profile']['pack_id']
     root = manifest['profile']['destination_root']
     result = {}
@@ -138,6 +140,7 @@ def _textures(manifest, asset):
         texture.set_editor_property('compression_settings', u.TextureCompressionSettings.TC_NORMALMAP if channel == 'Normal'
                                     else u.TextureCompressionSettings.TC_MASKS if channel == 'ORM'
                                     else u.TextureCompressionSettings.TC_DEFAULT)
+        texture.set_editor_property('flip_green_channel', channel == 'Normal' and flip_green)
         mark(texture, pack)
         save(texture)
         result[channel] = texture
@@ -325,6 +328,8 @@ def inspect(manifest, asset):
         compression = (u.TextureCompressionSettings.TC_NORMALMAP if channel == 'Normal' else
                        u.TextureCompressionSettings.TC_MASKS if channel == 'ORM' else u.TextureCompressionSettings.TC_DEFAULT)
         texture_ok &= texture is not None and texture.get_editor_property('compression_settings') == compression
+        texture_ok &= texture is not None and bool(texture.get_editor_property('flip_green_channel')) == (
+            channel == 'Normal' and profiles.flip_normal_green(profile))
         if mi and texture:
             texture_ok &= u.MaterialEditingLibrary.get_material_instance_texture_parameter_value(mi, channel) == texture
     expected_scalars = profiles.material_scalars(profile, 'ORM' in asset['textures'])

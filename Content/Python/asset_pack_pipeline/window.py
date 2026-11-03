@@ -55,6 +55,8 @@ def profile_from_fields(base, values):
             profile[key] = float(values[key])
     if 'orm_texture' in values:
         profile['orm_texture'] = values['orm_texture'].strip()
+    if 'normal_map_convention' in values:
+        profile['normal_map_convention'] = values['normal_map_convention']
     from . import profiles
     profiles.validate_settings(profile)
     ids = [x for x in re.split(r'[,;\s]+', values['asset_ids'].strip()) if x]
@@ -388,9 +390,12 @@ class PipelineWindow(GuidedWindow):
         t.Label(maps, text='ORM: R=AO, G=Roughness, B=Metallic. Можно использовать {asset_id} в пути.\n'
                            'С ORM Roughness умножает канал G; Metallic берётся из B.',
                 style='Muted.TLabel').grid(row=6, column=0, columnspan=3, sticky='w', padx=12, pady=5)
+        self._field(maps, 7, 'normal_map_convention', 'Формат карты нормалей', 'OpenGL', ['OpenGL', 'DirectX'])
+        t.Label(maps, text='OpenGL (Y+): Blender, glTF — Unreal переворачивает канал G. DirectX (Y−): без изменений.',
+                style='Muted.TLabel').grid(row=8, column=0, columnspan=3, sticky='w', padx=12, pady=5)
         self.settings_button = t.Button(maps, text='Обновить материалы и настройки без импорта мешей',
                                        command=lambda: self.execute('settings'))
-        self.settings_button.grid(row=7, column=0, columnspan=3, sticky='w', padx=12, pady=8)
+        self.settings_button.grid(row=9, column=0, columnspan=3, sticky='w', padx=12, pady=8)
         meshes = t.LabelFrame(materials, text='  Настройки меша  ')
         meshes.pack(fill='x')
         self._field(meshes, 0, 'collision', 'Простая коллизия', 'convex', ['convex', 'box', 'none'])

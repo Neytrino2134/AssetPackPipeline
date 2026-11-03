@@ -24,6 +24,7 @@ def fingerprint(manifest, asset, operation, engine_version):
     spec = {'schema': RECEIPT_SCHEMA, 'plugin_version': __version__, 'engine_version': engine_version,
             'operation': operation, 'nanite_enabled':profile.get('nanite_enabled',False),
             'validation_policy':profile.get('validation_policy','warn'),
+            'normal_map_convention':profile.get('normal_map_convention','OpenGL'),
             'pack_id': profile['pack_id'], 'destination_root': profile['destination_root'],
             'source_format': profile['source_format'], 'asset_id': asset['id'], 'mesh_path': asset['mesh_path'],
             'lods': asset['lods'], 'textures': asset['textures'],

@@ -28,6 +28,13 @@ class IncrementalTests(unittest.TestCase):
         self.manifest['profile']['convex_collision']={'hull_count':16}
         self.assertNotEqual(first,incremental.fingerprint(self.manifest,self.asset,'settings_update','5.8.4'))
 
+    def test_normal_map_convention_invalidates_receipt(self):
+        first=incremental.fingerprint(self.manifest,self.asset,'settings_update','5.8.4')
+        self.manifest['profile']['normal_map_convention']='OpenGL'
+        self.assertEqual(first,incremental.fingerprint(self.manifest,self.asset,'settings_update','5.8.4'))
+        self.manifest['profile']['normal_map_convention']='DirectX'
+        self.assertNotEqual(first,incremental.fingerprint(self.manifest,self.asset,'settings_update','5.8.4'))
+
     def test_fingerprint_changes_for_effective_settings_and_operation(self):
         first = incremental.fingerprint(self.manifest, self.asset, 'import', '5.8.3')
         self.manifest['profile']['lod_screen_sizes'] = [1]

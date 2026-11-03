@@ -1,4 +1,8 @@
-# Asset Pack Pipeline 0.30.0
+# Asset Pack Pipeline 0.30.1
+
+The plugin window journal is saved to Saved/AssetPackPipeline/Logs/journal-<date>.log
+(errors with full tracebacks). After an error, «Журнал в папке…» opens Explorer with
+the file selected, ready to copy from another device.
 
 Custom UI remembers its position, size, mode, tab, wizard step, Quick Start choices
 and unsaved form edits between sessions; a Pin button keeps it above other windows.

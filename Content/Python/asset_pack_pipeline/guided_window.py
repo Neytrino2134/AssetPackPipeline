@@ -75,7 +75,7 @@ class GuidedWindow(AssistantWindow, FinalWindow):
         t.Button(self.guide_nav, text='Назад', command=lambda: self.guide_move(-1)).pack(side='left')
         t.Button(self.guide_nav, text='Далее', command=lambda: self.guide_move(1)).pack(side='right')
         self.guide_actions = t.Frame(self.controls_frame)
-        self.guide_actions.pack(fill='x',pady=(0,10),before=self.state_label)
+        self.guide_actions.pack(fill='x',pady=(0,10),before=self.status_row)
         t.Button(self.guide_actions, text='Проверить исходники', command=lambda: self.guide_run(False)).pack(side='left')
         t.Button(self.guide_actions, text='Подготовить меши и сцены', style='Accent.TButton',
                  command=lambda: self.guide_run(True)).pack(side='left', padx=10)
@@ -94,10 +94,10 @@ class GuidedWindow(AssistantWindow, FinalWindow):
         self.guide_nav.pack_forget()
         if pro:
             self.tabs.pack(fill='both', expand=True)
-            self.expert_actions.pack(fill='x',before=self.state_label)
+            self.expert_actions.pack(fill='x',before=self.status_row)
         else:
             self.guided_frame.pack(fill='both', expand=True)
-            self.guide_actions.pack(fill='x',pady=(0,10),before=self.state_label)
+            self.guide_actions.pack(fill='x',pady=(0,10),before=self.status_row)
             self.guide_move(0)
 
     def guide_move(self, delta):

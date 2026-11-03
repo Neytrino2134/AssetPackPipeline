@@ -148,6 +148,8 @@ class Session:
                     self.render_runs.append(report)
                 if state != 'passed':
                     message = report.get('error') or 'Этап завершён со статусом '+state+'. См. отчёт.'
+                    if report.get('report_path'):
+                        message += ' Отчёт: '+report['report_path']
                     if not is_render or state not in ('failed', 'partial'):
                         raise RuntimeError(message)
                     self.render_errors.append(message)

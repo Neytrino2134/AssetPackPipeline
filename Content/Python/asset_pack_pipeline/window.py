@@ -595,13 +595,17 @@ class PipelineWindow(GuidedWindow):
         controls = t.Frame(shell, padding=(10, 8))
         self.controls_frame = controls
         controls.pack(side='bottom',fill='x',pady=(10,0),before=self.tabs)
-        self.state_label = t.Label(controls, text='Готово к настройке', style='Muted.TLabel')
-        self.state_label.pack(anchor='w', pady=(0, 5))
+        # Status line; on an error it offers the on-disk journal for copying elsewhere.
+        self.status_row = t.Frame(controls)
+        self.status_row.pack(fill='x', pady=(0, 5))
+        self.state_label = t.Label(self.status_row, text='Готово к настройке', style='Muted.TLabel')
+        self.state_label.pack(side='left', anchor='w')
+        self.journal_button = t.Button(self.status_row, text='Журнал в папке…', command=self.reveal_journal)
         self.progress = t.Progressbar(controls, mode='determinate', maximum=100)
         self.progress.pack(fill='x', pady=(0, 8))
         actions = t.Frame(controls)
         self.expert_actions = actions
-        actions.pack(fill='x',before=self.state_label)
+        actions.pack(fill='x',before=self.status_row)
         self.action_buttons = []
         for label, action, style in [('Проверить исходники', 'plan', 'TButton'),
                                       ('Запустить импорт', 'start', 'Accent.TButton'),
@@ -623,15 +627,63 @@ class PipelineWindow(GuidedWindow):
         if self.profile_path:
             self.profile_label.configure(text=f'{self.profile_path.name}' + ('  • изменён' if self.dirty else ''))
 
-    def _log(self, text):
+    def _log(self, text, details=''):
+        line = time.strftime('%H:%M:%S') + '  ' + text + '\n'
         self.log.configure(state='normal')
-        self.log.insert('end', time.strftime('%H:%M:%S') + '  ' + text + '\n')
+        self.log.insert('end', line)
         self.log.see('end')
         self.log.configure(state='disabled')
+        self._journal_write(line + details)
+
+    JOURNAL_KEEP = 30
+
+    def journal_path(self):
+        """One file per window session in Saved/AssetPackPipeline/Logs; None until Saved is known."""
+        if getattr(self, '_journal', None) is None and getattr(self, 'saved', None):
+            from . import __version__
+            folder = self.saved / 'Logs'
+            folder.mkdir(parents=True, exist_ok=True)
+            for old in sorted(folder.glob('journal-*.log'))[:-(self.JOURNAL_KEEP-1)]:
+                old.unlink(missing_ok=True)
+            self._journal = folder / time.strftime('journal-%Y-%m-%d_%H-%M-%S.log')
+            header = (f'MESHFLOW Asset Pack Pipeline {__version__} · {"Custom UI" if self.external else "Unreal UI"} · '
+                      f'{time.strftime("%Y-%m-%d %H:%M:%S")} · Python {sys.version.split()[0]} · {sys.platform}\n')
+            self._journal.write_text(header + ''.join(getattr(self, '_journal_pending', [])), encoding='utf-8')
+            self._journal_pending = []
+        return getattr(self, '_journal', None)
+
+    def _journal_write(self, text):
+        try:
+            path = self.journal_path()
+            if path is None:
+                self._journal_pending = getattr(self, '_journal_pending', []) + [text]
+            else:
+                with path.open('a', encoding='utf-8') as stream:
+                    stream.write(text)
+        except OSError:
+            pass  # The on-screen journal stays authoritative if the disk is unavailable.
+
+    def show_journal_button(self):
+        if not self.journal_button.winfo_ismapped():
+            self.journal_button.pack(side='right')
+
+    def reveal_journal(self):
+        path = self.journal_path()
+        if path is None or not path.is_file():
+            return
+        if sys.platform == 'win32':
+            import subprocess
+            subprocess.Popen(f'explorer /select,"{path}"')
+        else:
+            import webbrowser
+            webbrowser.open(path.parent.as_uri())
 
     def _callback_error(self, kind, value, tb):
-        self._log('Ошибка: ' + str(value))
+        import traceback
+        details = ''.join(traceback.format_exception(kind, value, tb)) if tb else ''
+        self._log('Ошибка: ' + str(value), details)
         self.state_label.configure(text='Ошибка — подробности в журнале')
+        self.show_journal_button()
         self.tabs.select(self.results_tab)
         if self.external:
             print(f'AssetPackPipeline Custom UI: {value}',file=sys.stderr)

@@ -82,11 +82,19 @@ class CustomWindow(PipelineWindow):
                    remote['stage'] if remote else 'Готово к настройке' if not self.run_id else None)
             if label and label!=getattr(self,'_status_text',None):
                 self.state_label.configure(text=label);self._status_text=label
+            # Errors of steps that ran inside Unreal go to the journal file too.
+            error=remote.get('error') if remote else None
+            if error and error!=getattr(self,'_remote_error',None):
+                self._remote_error=error
+                self._log('Ошибка в Unreal: '+error,(remote.get('stage') or '')+'\n')
+                self.show_journal_button()
             serial=ready.get('custom_focus',0)
             if serial!=self.focus_serial:
                 self.focus_serial=serial;self.root.deiconify();self.root.lift()
         except Exception as error:
             self.state_label.configure(text=str(error))
+            if str(error)!=getattr(self,'_poll_error',None):
+                self._poll_error=str(error);self._log('Связь с Unreal: '+str(error))
         if not self.closed:self.root.after(100,self.external_poll)
 
     def _restore_ui_state(self):

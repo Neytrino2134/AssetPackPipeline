@@ -6,6 +6,9 @@ from . import __version__
 TITLE='MESHFLOW Asset Pack Pipeline v'+__version__
 SUBTITLE='FBX / GLB   →   Static Mesh + LOD   →   Материалы   →   Проверка'
 HEIGHT=64
+PIN_FONT='Segoe MDL2 Assets'  # Windows 10/11 icon font; Pin / Pinned glyphs
+PIN_GLYPH,PINNED_GLYPH='',''
+PIN_ACTIVE='#3975da'
 
 class WindowChrome:
     """One full-width header: brand, pipeline steps and window buttons; every
@@ -40,6 +43,16 @@ class WindowChrome:
             button.bind('<Enter>',lambda event,b=button,c=hover:b.configure(bg=c))
             button.bind('<Leave>',lambda event,b=button:b.configure(bg=bg))
             if label=='□':self.maximize_button=button
+        # Pin: keep the window above other apps (e.g. Unreal) while it renders.
+        self.pinned=False
+        self.bg=bg
+        self.pin_button=tk.Button(self.bar,text=PIN_GLYPH,command=self.toggle_pin,bg=bg,fg='#b8c5db',
+                                  activebackground='#30394a',activeforeground='#ffffff',relief='flat',
+                                  borderwidth=0,highlightthickness=0,font=(PIN_FONT,12),width=4,takefocus=True)
+        self.pin_button.pack(side='right',anchor='n',ipady=6)
+        self.pin_button.bind('<Enter>',lambda event:self.pin_button.configure(bg='#30394a' if not self.pinned else PIN_ACTIVE))
+        self.pin_button.bind('<Leave>',lambda event:self._paint_pin())
+        self.normal_geometry=None
         for widget in (self.bar,badge,text,title,subtitle):
             widget.bind('<ButtonPress-1>',self.move)
             widget.bind('<Double-Button-1>',self.toggle_maximize)
@@ -76,9 +89,24 @@ class WindowChrome:
     def mapped(self,event):
         if event.widget is self.root:self.root.after_idle(self.apply_native_frame)
 
+    def toggle_pin(self):
+        self.set_pinned(not self.pinned)
+
+    def set_pinned(self,pinned):
+        self.pinned=bool(pinned)
+        self.root.attributes('-topmost',self.pinned)
+        self._paint_pin()
+
+    def _paint_pin(self):
+        self.pin_button.configure(text=PINNED_GLYPH if self.pinned else PIN_GLYPH,
+                                  bg=PIN_ACTIVE if self.pinned else self.bg,
+                                  fg='#ffffff' if self.pinned else '#b8c5db')
+
     def configured(self,event):
         if event.widget is not self.root:return
-        zoomed=self.root.state()=='zoomed'
+        state=self.root.state()
+        if state=='normal':self.normal_geometry=self.root.geometry()
+        zoomed=state=='zoomed'
         if zoomed!=self.zoomed:
             self.zoomed=zoomed;self.maximize_button.configure(text='❐' if zoomed else '□')
 

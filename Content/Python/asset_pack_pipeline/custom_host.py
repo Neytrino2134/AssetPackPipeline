@@ -21,8 +21,10 @@ class CustomWindow(PipelineWindow):
         from .custom_chrome import TITLE
         self.root.title(TITLE)
         if self.chrome.logo:self.root.iconphoto(True,self.chrome.logo)
+        self._restore_ui_state()
         self.chrome.apply_native_frame()
         self.state_label.configure(text='Окно готово. Подключение к Unreal…')
+        self.root.after(10000,self._autosave_ui_state)
         self.api.start()
         self.root.after(50,self.external_poll)
         self.root.after(20,self.heartbeat)
@@ -87,9 +89,40 @@ class CustomWindow(PipelineWindow):
             self.state_label.configure(text=str(error))
         if not self.closed:self.root.after(100,self.external_poll)
 
+    def _restore_ui_state(self):
+        from . import ui_state
+        state=ui_state.load(self)
+        if not state:return
+        try:ui_state.restore(self,state)
+        except Exception as error:self._log('Не удалось восстановить настройки окна: '+str(error))
+        def place():
+            self.chrome.apply_native_frame()
+            try:ui_state.restore_geometry(self,state)
+            except Exception as error:self._log('Не удалось восстановить положение окна: '+str(error))
+        # First map only; a flag, since tkinter's unbind(seq,id) drops every <Map> handler.
+        pending=[True]
+        def mapped(event):
+            if event.widget is self.root and pending:
+                pending.clear();self.root.after_idle(place)
+        self.root.bind('<Map>',mapped,add='+')
+
+    def _autosave_ui_state(self):
+        # Also covers a client closed by Unreal (orphan cleanup) or a crash.
+        if self.closed:return
+        from . import ui_state
+        try:ui_state.save(self)
+        except Exception:pass
+        self.root.after(10000,self._autosave_ui_state)
+
     def close(self,prompt=True):
-        super().close(prompt)
-        if self.closed:self.api.close()
+        # Unsaved form edits are kept as a draft in ui_state, so no discard prompt.
+        from . import ui_state
+        try:state=ui_state.capture(self)
+        except Exception:state=None
+        super().close(False)
+        if self.closed:
+            if state:ui_state.save(self,state)
+            self.api.close()
 
     def open_reports(self):
         folder=self.report_path.parent if self.report_path else self.saved/'Runs'

@@ -68,6 +68,36 @@ class GuidedTests(unittest.TestCase):
         session.tick()
         self.assertTrue(session.error)
 
+    def test_failed_render_preserves_passed_images_and_delivers_project(self):
+        root = Path(self.folder.name)
+        source = root/'preview.png'
+        source.write_bytes(b'completed render')
+        profile = root/'profile.json'
+        profile.write_text(json.dumps({'pack_id':'TestPack', 'delivery':{'output_directory':str(root)}}))
+
+        class API:
+            def start_media(self, path): return 'render'
+            def status(self, job):
+                if job == 'verification':
+                    return {'status':'passed'}
+                return {'kind':'individual_previews', 'status':'failed', 'error':'render failed',
+                        'run_id':'render', 'output_directory':str(root), 'assets':[
+                            {'asset_id':'Rock01', 'status':'passed', 'output_path':str(source)},
+                            {'asset_id':'Rock02', 'status':'failed'}]}
+            def create_delivery(self, path): return {'status':'passed', 'run_id':'delivery'}
+            def start_delivery_verification(self, job): return 'verification'
+            def package_delivery(self, job): return {'zip_path':str(root/'project.zip')}
+
+        steps = [('LOD', op) for op in ('media', 'delivery', 'verify_delivery', 'package')]
+        session = Session(API(), {'LOD':str(profile)}, steps)
+        for _ in range(5):
+            session.tick()
+        self.assertTrue(session.done)
+        self.assertEqual(session.error, 'render failed')
+        self.assertEqual(session.result['status'], 'partial')
+        self.assertEqual(session.result['renders']['count'], 1)
+        self.assertTrue((root/'PartialResults.json').is_file())
+
     def test_editor_reentrant_tick_does_not_launch_next_step(self):
         class API:
             def start(self,path):

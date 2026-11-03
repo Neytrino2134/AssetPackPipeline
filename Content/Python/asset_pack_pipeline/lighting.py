@@ -1,4 +1,22 @@
 """Shared camera-side key light for overview and individual asset studios."""
+import math
+
+
+def settings(profile):
+    media = profile.get('media', {})
+    result = {}
+    for key, default, low, high in (
+        ('exposure_bias', -0.375, -4, 4),
+        ('key_intensity', 4.5, .1, 20),
+        ('sky_intensity', .85, 0, 5),
+    ):
+        number = float(media.get(key, default))
+        if not math.isfinite(number) or not low <= number <= high:
+            raise ValueError('Invalid media '+key)
+        result[key] = number
+    return result
+
+
 def key_rotation(camera_yaw):
     # Pitch 225 points down with reversed horizontal direction. At the default
     # camera yaw -90 this gives yaw 60, illuminating from the +Y camera side.

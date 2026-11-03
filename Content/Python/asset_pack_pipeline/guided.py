@@ -1,5 +1,6 @@
 """Human-facing presets and ordered operations; uses the same API as MCP."""
 import copy
+import json
 import re
 from pathlib import Path
 
@@ -69,7 +70,7 @@ def render_steps(steps):
     return renders+[(renders[-1][0], 'export_renders')]
 
 
-def export_final_renders(reports, profile_path):
+def export_final_renders(reports, profile_path, *, partial=False):
     """Copy finished PNGs to FinalProject/<timestamp>/<pack>_Renders(.zip)."""
     from .discovery import read_json
     from .final_output import export_renders, export_root
@@ -78,11 +79,11 @@ def export_final_renders(reports, profile_path):
     profile = read_json(profile_path)
     output = profile.get('delivery', {}).get('output_directory', '')
     base = Path(output) if output else Path(reports[0]['output_directory']).resolve().parents[1]/'RenderExports'
-    return export_renders(reports, export_root(base), profile['pack_id'])
+    return export_renders(reports, export_root(base), profile['pack_id'], partial=partial)
 
 
 class Session:
-    """Advance only after a successful job. Cancel never launches later steps."""
+    """Continue independent work after render failures. Cancel stops the sequence."""
     def __init__(self, api, paths, steps):
         self.api, self.paths, self.steps = api, paths, list(steps)
         self.waiting = None
@@ -90,8 +91,11 @@ class Session:
         self.error = None
         self.label = 'Подготовка'
         self.delivery_id = None
+        self.delivery_project = None
         self.render_runs = []
+        self.render_errors = []
         self.result = None
+        self.output_requested = any(op in ('delivery', 'export_renders') for _, op in self.steps)
 
     def cancel(self):
         self.steps.clear()
@@ -119,11 +123,18 @@ class Session:
                 if state == 'running':
                     return
                 self.waiting = None
-                if state != 'passed':
-                    raise RuntimeError('Этап завершён со статусом '+state+'. См. отчёт; продолжение остановлено.')
-                if report.get('kind') in ('preview_export', 'individual_previews'):
+                is_render = report.get('kind') in ('preview_export', 'individual_previews')
+                if is_render:
                     self.render_runs.append(report)
+                if state != 'passed':
+                    message = report.get('error') or 'Этап завершён со статусом '+state+'. См. отчёт.'
+                    if not is_render or state not in ('failed', 'partial'):
+                        raise RuntimeError(message)
+                    self.render_errors.append(message)
             if not self.steps:
+                if self.render_errors:
+                    self._finish_partial()
+                    return
                 self.done = True
                 self.label = (('Поставка готова: '+self.result['zip_path']) if self.result and 'zip_path' in self.result
                               else ('Рендеры готовы: '+self.result['renders']['zip_path']) if self.result
@@ -142,26 +153,64 @@ class Session:
             elif operation == 'overview':
                 if self.api.create_overview(path)['status'] != 'passed':
                     raise RuntimeError('Обзорная сцена не создана. См. отчёт.')
-            elif operation == 'preview':
-                self.waiting = self.api.start_previews(path)
-            elif operation == 'media':
-                self.waiting = self.api.start_media(path)
+            elif operation in ('preview', 'media'):
+                start = self.api.start_previews if operation == 'preview' else self.api.start_media
+                try:
+                    self.waiting = start(path)
+                except Exception as error:
+                    self.render_errors.append(str(error))
             elif operation == 'delivery':
                 report = self.api.create_combined_delivery(list(self.paths.values())) if len(self.paths)>1 else self.api.create_delivery(path)
                 if report['status'] != 'passed':
-                    raise RuntimeError('Не удалось создать чистый проект. См. отчёт поставки.')
+                    raise RuntimeError(report.get('error') or 'Не удалось создать чистый проект. См. отчёт поставки.')
                 self.delivery_id = report['run_id']
+                self.delivery_project = report.get('project_path')
             elif operation == 'verify_delivery':
                 self.waiting = self.api.start_delivery_verification(self.delivery_id)
             elif operation == 'package':
                 self.result = self.api.package_delivery(self.delivery_id)
                 from .final_output import export_renders
                 from .discovery import read_json
-                self.result['renders'] = export_renders(self.render_runs, Path(self.result['zip_path']).parent, read_json(path)['pack_id'])
+                self.result['renders'] = export_renders(self.render_runs, Path(self.result['zip_path']).parent,
+                                                        read_json(path)['pack_id'], partial=bool(self.render_errors))
             elif operation == 'export_renders':
-                self.result = {'renders': export_final_renders(self.render_runs, path)}
+                if not self.render_errors:
+                    self.result = {'renders': export_final_renders(self.render_runs, path)}
             else:
                 raise ValueError('Неизвестная операция '+operation)
         except Exception as error:
-            self.done, self.error = True, str(error)
-            self.label = str(error)
+            self._finish_partial(str(error))
+
+    def _finish_partial(self, error=None):
+        errors = self.render_errors + ([error] if error else [])
+        self.done = True
+        self.error = self.label = '\n'.join(errors)
+        if not self.output_requested:
+            return
+        try:
+            from .discovery import read_json
+            from .final_output import export_renders, export_root
+            profile = read_json(next(iter(self.paths.values())))
+            base = profile.get('delivery', {}).get('output_directory')
+            result = self.result if self.result is not None else {}
+            if result.get('zip_path'):
+                destination = Path(result['zip_path']).parent
+            elif self.delivery_project:
+                destination = Path(self.delivery_project).parent.parent
+                result['project_path'] = self.delivery_project
+            else:
+                if not base:
+                    from .api import _runs
+                    base = _runs().parent / 'Deliveries'
+                destination = export_root(base)
+            result.update(status='partial', directory=str(destination), errors=errors)
+            self.result = result
+            (destination/'PartialResults.json').write_text(
+                json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
+            if 'renders' not in result:
+                result['renders'] = export_renders(self.render_runs, destination, profile['pack_id'], partial=True)
+                (destination/'PartialResults.json').write_text(
+                    json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
+            self.label = 'Частичный результат: '+str(destination)+'\n'+self.error
+        except Exception as export_error:
+            self.error = self.label = self.error+'\nОшибка сохранения результатов: '+str(export_error)

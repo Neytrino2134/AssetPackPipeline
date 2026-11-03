@@ -19,12 +19,19 @@ CVARS = {
 _saved = None
 _saved_throttle = None
 _saved_view_mode = None
+_saved_collision_nanite = None
 
 def select_view(mode='lit'):
     """Save once per job, enforce and read back the active viewport mode."""
-    global _saved_view_mode
+    global _saved_view_mode, _saved_collision_nanite
     import unreal as u
     from .render_views import MODES
+    if mode == 'collision_pawn':
+        if _saved_collision_nanite is None:
+            _saved_collision_nanite = u.SystemLibrary.get_console_variable_int_value('r.Nanite')
+        u.SystemLibrary.execute_console_command(_world(), 'r.Nanite 0')
+    else:
+        _restore_collision_nanite()
     desired=getattr(u.ViewModeIndex,MODES[mode][0])
     if _saved_view_mode is None:
         _saved_view_mode=u.AutomationLibrary.get_editor_active_viewport_view_mode()
@@ -33,6 +40,14 @@ def select_view(mode='lit'):
     actual=u.AutomationLibrary.get_editor_active_viewport_view_mode()
     if actual!=desired:raise RuntimeError('Could not set viewport render mode: '+mode)
     return str(actual)
+
+
+def _restore_collision_nanite():
+    global _saved_collision_nanite
+    if _saved_collision_nanite is not None:
+        import unreal as u
+        u.SystemLibrary.execute_console_command(_world(), f'r.Nanite {_saved_collision_nanite}')
+        _saved_collision_nanite = None
 
 
 THROTTLE_PROPERTY = 'bThrottleCPUWhenNotForeground'
@@ -108,6 +123,7 @@ def apply():
 
 def restore():
     global _saved, _saved_throttle, _saved_view_mode
+    _restore_collision_nanite()
     if _saved_view_mode is not None:
         import unreal as u
         original=_saved_view_mode

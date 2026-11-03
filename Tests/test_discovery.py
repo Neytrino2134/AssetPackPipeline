@@ -52,6 +52,11 @@ class DiscoveryTests(unittest.TestCase):
         self.profile['validation_policy']='strict'
         with self.assertRaisesRegex(ValueError,'Missing source'):self.scan()
 
+    def test_convex_collision_is_accepted_by_scan(self):
+        # Quick start / Master write collision=convex; scan must not reject it.
+        self.profile.update(collision='convex',convex_collision={'hull_count':8})
+        self.assertTrue(self.scan()['assets'])
+
     def test_skip_never_bypasses_bad_global_settings_or_all_invalid(self):
         self.profile['skip_invalid_sources']='yes'
         with self.assertRaisesRegex(ValueError,'boolean'):self.scan()

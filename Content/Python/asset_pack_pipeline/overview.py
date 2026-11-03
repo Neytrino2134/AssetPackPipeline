@@ -234,19 +234,20 @@ def build(manifest, backup_folder, lod_review=False):
     floor = _spawn(existing, profile, 'Floor', u.StaticMeshActor, [0, 0, -5])
     floor.static_mesh_component.set_static_mesh(u.load_asset('/Engine/BasicShapes/Cube'))
     floor.static_mesh_component.set_material(0, _floor_material(profile))
-    from .lighting import key_rotation
+    from . import lighting
+    lights = lighting.settings(profile)
     light = _spawn(existing, profile, 'KeyLight', u.DirectionalLight, [0, 0, planned['height'] + 300],
-                   u.Rotator(**key_rotation(-90)))
+                   u.Rotator(**lighting.key_rotation(-90)))
     component = light.get_component_by_class(u.DirectionalLightComponent)
     component.set_mobility(u.ComponentMobility.MOVABLE)
-    component.set_intensity(6.0)
+    component.set_intensity(lights['key_intensity'])
     component.set_light_color(u.LinearColor(1, 0.94, 0.86, 1))
     sky = _spawn(existing, profile, 'SkyLight', u.SkyLight, [0, 0, planned['height'] + 200])
     sky_component = sky.get_component_by_class(u.SkyLightComponent)
     sky_component.set_mobility(u.ComponentMobility.MOVABLE)
     sky_component.set_editor_property('source_type', u.SkyLightSourceType.SLS_SPECIFIED_CUBEMAP)
     sky_component.set_editor_property('cubemap', u.load_asset('/Engine/MapTemplates/Sky/DaylightAmbientCubemap'))
-    sky_component.set_intensity(1.1)
+    sky_component.set_intensity(lights['sky_intensity'])
     exposure = _spawn(existing, profile, 'Exposure', u.PostProcessVolume, [0, 0, 0])
     exposure.set_editor_property('unbound', True)
     post = exposure.get_editor_property('settings')
@@ -254,6 +255,8 @@ def build(manifest, backup_folder, lod_review=False):
     post.set_editor_property('auto_exposure_method', u.AutoExposureMethod.AEM_MANUAL)
     post.set_editor_property('override_auto_exposure_apply_physical_camera_exposure', True)
     post.set_editor_property('auto_exposure_apply_physical_camera_exposure', False)
+    post.set_editor_property('override_auto_exposure_bias', True)
+    post.set_editor_property('auto_exposure_bias', lights['exposure_bias'])
     exposure.set_editor_property('settings', post)
     title = _spawn(existing, profile, 'Title', u.TextRenderActor,
                    [0, -planned['depth']/2 + config['spacing']*0.4, planned['height'] + 50],

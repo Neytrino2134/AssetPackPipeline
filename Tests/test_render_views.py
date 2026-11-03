@@ -31,12 +31,16 @@ class RenderViewsTests(unittest.TestCase):
             @classmethod
             def set_editor_active_viewport_view_mode(cls,mode):cls.mode=mode;cls.sets.append(mode)
         enum=types.SimpleNamespace(**{entry[0]:name for name,entry in render_views.MODES.items()})
-        unreal=types.SimpleNamespace(AutomationLibrary=Automation,ViewModeIndex=enum)
-        with patch.dict(sys.modules,{'unreal':unreal}),patch.object(render_quality,'_saved',None),patch.object(render_quality,'_saved_throttle',None),patch.object(render_quality,'_saved_view_mode',None):
+        commands=[]
+        system=types.SimpleNamespace(get_console_variable_int_value=lambda name:1,
+                                     execute_console_command=lambda world,command:commands.append(command))
+        unreal=types.SimpleNamespace(AutomationLibrary=Automation,ViewModeIndex=enum,SystemLibrary=system)
+        with patch.dict(sys.modules,{'unreal':unreal}),patch.object(render_quality,'_world',return_value=None),patch.object(render_quality,'_saved',None),patch.object(render_quality,'_saved_throttle',None),patch.object(render_quality,'_saved_view_mode',None):
             render_quality.select_view('lit');self.assertEqual(Automation.mode,'lit')
             render_quality.select_view('collision_pawn');self.assertEqual(Automation.mode,'collision_pawn')
             render_quality.restore();self.assertEqual(Automation.mode,'wire')
             render_quality.restore();self.assertEqual(Automation.sets.count('wire'),1)
+            self.assertEqual(commands,['r.Nanite 0','r.Nanite 1'])
 
     def test_final_export_retains_distinct_render_suffixes(self):
         with tempfile.TemporaryDirectory() as temp:

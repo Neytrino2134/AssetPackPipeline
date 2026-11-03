@@ -6,7 +6,7 @@ from . import previews
 
 
 def settings(profile):
-    from . import render_views
+    from . import lighting, render_views
     profile = dict(profile, lod_screen_sizes=[1.0]) if profile.get('nanite_enabled', False) else profile
     value=dict(profile.get('media',{}))
     value['view_modes']=render_views.settings(profile.get('previews',{}).get('view_modes'))
@@ -19,11 +19,11 @@ def settings(profile):
     for angle in value['yaw_angles']:
         if isinstance(angle,bool) or not isinstance(angle,(int,float)) or not math.isfinite(angle) or not -360<=angle<=360:
             raise ValueError('Media yaw angles must be finite degrees in [-360,360]')
-    for key,default,low,high in [('pitch',15,0,65),('fov',40,15,90),('margin',1.18,1.05,2),
-                               ('exposure_bias',-.75,-4,4),('key_intensity',3,.1,20),('sky_intensity',.6,0,5)]:
+    for key,default,low,high in [('pitch',15,0,65),('fov',40,15,90),('margin',1.18,1.05,2)]:
         number=float(value.get(key,default))
         if not math.isfinite(number) or not low<=number<=high:raise ValueError('Invalid media '+key)
         value[key]=number
+    value.update(lighting.settings(profile))
     value.setdefault('include_invalid',False)
     value.setdefault('lod_index',0)
     if not isinstance(value['include_invalid'],bool):raise ValueError('media.include_invalid must be boolean')

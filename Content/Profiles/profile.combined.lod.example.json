@@ -54,9 +54,9 @@
     "pitch": 15,
     "fov": 40,
     "margin": 1.18,
-    "exposure_bias": -0.75,
-    "key_intensity": 3,
-    "sky_intensity": 0.6,
+    "exposure_bias": -0.375,
+    "key_intensity": 4.5,
+    "sky_intensity": 0.85,
     "lod_index": 0,
     "include_invalid": false
   },

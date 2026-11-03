@@ -27,7 +27,7 @@ def pack_folder_name(pack):
     return pack
 
 
-def export_renders(reports, destination, pack_name='AssetPack'):
+def export_renders(reports, destination, pack_name='AssetPack', *, partial=False):
     pack_folder_name(pack_name)
     files = []
     ids=sorted({str(a['asset_id']) for r in reports for a in r['assets'] if a.get('asset_id')})
@@ -40,13 +40,15 @@ def export_renders(reports, destination, pack_name='AssetPack'):
         model_ids[asset_id]=candidate;used_ids.add(candidate)
     names=set()
     for report in reports:
-        if report['status'] != 'passed':
+        if not partial and report['status'] != 'passed':
             raise ValueError('Render run did not pass')
         root = Path(report['output_directory']).resolve()
         run = report['run_id']
         if not run.isalnum():
             raise ValueError('Invalid render run ID')
         for asset in report['assets']:
+            if partial and asset['status'] != 'passed':
+                continue
             path = Path(asset['output_path']).resolve()
             if asset['status'] != 'passed' or path.suffix.lower() != '.png' or not path.is_relative_to(root) or not path.is_file():
                 raise ValueError('Missing, incomplete or unexpected render output')

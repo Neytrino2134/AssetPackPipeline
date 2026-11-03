@@ -87,8 +87,6 @@ def scan(profile_path):
         raise ValueError('LOD screen sizes must decrease strictly')
     if profile.get('high_policy', 'exclude') != 'exclude':
         raise ValueError('This version supports high_policy=exclude only')
-    if profile.get('collision', 'none') not in ('none', 'box'):
-        raise ValueError('collision must be none or box in version 0.1')
     catalog = read_json(contained(root, profile.get('mesh_info', 'MeshInfo.json')))
     if catalog.get('schema_version') != 2:
         raise ValueError('MeshInfo schema_version must be 2')

@@ -77,7 +77,8 @@ def _safe_to_switch():
     u = _engine()
     from . import runtime
     runtime.assert_editor_idle()
-    dirty = u.EditorLoadingAndSavingUtils.get_dirty_map_packages()
+    from .cleanup import dirty_user_maps
+    dirty = dirty_user_maps(u)
     if dirty:
         raise RuntimeError('Save or revert dirty maps before creating/opening an overview: ' +
                            ', '.join(p.get_name() for p in dirty))

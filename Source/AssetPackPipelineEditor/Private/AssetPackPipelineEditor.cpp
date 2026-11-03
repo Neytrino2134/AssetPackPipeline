@@ -27,6 +27,9 @@
 #include "Misc/MessageDialog.h"
 #include "Serialization/JsonSerializer.h"
 #include "Styling/AppStyle.h"
+#include "Styling/SlateStyle.h"
+#include "Styling/SlateStyleRegistry.h"
+#include "Brushes/SlateVectorImageBrush.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Widgets/SWindow.h"
 
@@ -460,8 +463,16 @@ public:
 class FAssetPackPipelineEditorModule : public IModuleInterface
 {
 public:
+    TUniquePtr<FSlateStyleSet> ToolbarStyle;
     virtual void StartupModule() override
     {
+        if (const auto Plugin = IPluginManager::Get().FindPlugin(TEXT("AssetPackPipeline")))
+        {
+            ToolbarStyle = MakeUnique<FSlateStyleSet>(TEXT("AssetPackPipelineStyle"));
+            ToolbarStyle->Set(TEXT("AssetPackPipeline.ToolbarLogo"), new FSlateVectorImageBrush(
+                Plugin->GetBaseDir() / TEXT("Resources/MeshFlowToolbar.svg"), FVector2D(20, 20)));
+            FSlateStyleRegistry::RegisterSlateStyle(*ToolbarStyle);
+        }
         if (!IsRunningCommandlet()) FGlobalTabmanager::Get()->RegisterNomadTabSpawner(PipelineTab,
             FOnSpawnTab::CreateLambda([](const FSpawnTabArgs&){TSharedRef<SPipelinePanel> Panel=SNew(SPipelinePanel); LivePipelinePanel=Panel; return SNew(SDockTab).TabRole(ETabRole::NomadTab)[Panel];}))
             .SetDisplayName(PipelineTitle()).SetMenuType(ETabSpawnerMenuType::Hidden);
@@ -469,6 +480,7 @@ public:
     virtual void ShutdownModule() override
     {
         if (!IsRunningCommandlet()) FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(PipelineTab);
+        if (ToolbarStyle) FSlateStyleRegistry::UnRegisterSlateStyle(*ToolbarStyle);
     }
 };
 IMPLEMENT_MODULE(FAssetPackPipelineEditorModule, AssetPackPipelineEditor)

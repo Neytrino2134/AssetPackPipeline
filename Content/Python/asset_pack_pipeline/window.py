@@ -255,11 +255,27 @@ class PipelineWindow(GuidedWindow):
         s.map('TEntry', bordercolor=[('focus', '#598de0'), ('!focus', '#363b47')],
               lightcolor=[('focus', '#598de0'), ('!focus', '#363b47')],
               darkcolor=[('focus', '#598de0'), ('!focus', '#363b47')])
-        s.configure('Vertical.TScrollbar', background='#343b4b', troughcolor='#20232b',
-                    bordercolor='#20232b', lightcolor='#343b4b', darkcolor='#343b4b', arrowcolor='#a1a9ba')
+        for orientation in ('Vertical', 'Horizontal'):
+            style = orientation + '.TScrollbar'
+            s.configure(style, background='#343b4b', troughcolor='#20232b',
+                        bordercolor='#20232b', lightcolor='#343b4b',
+                        darkcolor='#343b4b', arrowcolor='#a1a9ba', relief='flat')
+            s.map(style,
+                  background=[('pressed', '#52627c'), ('active', '#444f65')],
+                  troughcolor=[('!disabled', '#20232b'), ('disabled', '#20232b')],
+                  bordercolor=[('!disabled', '#20232b')],
+                  lightcolor=[('!disabled', '#343b4b')],
+                  darkcolor=[('!disabled', '#343b4b')],
+                  arrowcolor=[('disabled', '#687286'), ('!disabled', '#a1a9ba')])
         s.configure('Treeview', background='#191d25', fieldbackground='#191d25', foreground='#e5e8ef',
                     rowheight=27, borderwidth=0)
-        s.configure('Treeview.Heading', background='#303747', foreground='#b9c9e7', padding=6)
+        s.configure('Treeview.Heading', background='#303747', foreground='#b9c9e7', padding=6,
+                    relief='flat', bordercolor='#20232b', lightcolor='#303747', darkcolor='#303747')
+        s.map('Treeview.Heading',
+              background=[('pressed', '#394660'), ('active', '#414c62')],
+              relief=[('pressed', 'flat'), ('active', 'flat')],
+              lightcolor=[('!disabled', '#303747')],
+              darkcolor=[('!disabled', '#303747')])
         s.map('Treeview', background=[('selected', '#304e79')])
         s.configure('Horizontal.TProgressbar', background='#4e8cf2', troughcolor='#15181f', borderwidth=0)
         self.root.option_add('*TCombobox*Listbox.background', '#20232b')

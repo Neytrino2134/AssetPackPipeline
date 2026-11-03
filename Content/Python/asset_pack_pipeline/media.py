@@ -48,7 +48,7 @@ def frame_rows(assets,checks,config,folder,studio):
                     'lod_index':lod,'status':'pending','map_path':studio,
                     'output_path':str(Path(folder)/(asset['id']+('_diagnostic' if not check.get('strict_passed',check['passed']) else '')+suffix+'.png'))})
     from . import render_views
-    return render_views.expand(rows,config.get('view_modes'))
+    return render_views.expand(rows,config.get('view_modes'),config.get('frame_views'))
 
 
 def _backdrop(actors,profile,studio):

@@ -5,9 +5,12 @@ import re
 from pathlib import Path
 
 
-def prepare(base, source, pack, fmt, variants='both', renders=(), lod=0, finalize=False, output='', view_modes=()):
+def prepare(base, source, pack, fmt, variants='both', renders=(), lod=0, finalize=False, output='', view_modes=(), diagnostic_targets=None):
     from . import render_views
     view_modes=render_views.settings(view_modes)
+    lit_targets = set(renders)
+    diagnostics = set(diagnostic_targets or ()) if len(view_modes) > 1 else set()
+    renders = lit_targets | diagnostics
     if not Path(source).is_dir():
         raise ValueError('Выберите существующую папку исходников.')
     if not re.fullmatch(r'[A-Za-z][A-Za-z0-9_]*', pack):
@@ -41,6 +44,23 @@ def prepare(base, source, pack, fmt, variants='both', renders=(), lod=0, finaliz
                          (set(range(len(p['lod_screen_sizes']))) if 'LODS' in renders else set()) |
                          ({lod} if 'selected' in renders else set())) if variant == 'LOD' else [0]
         p['media'] = dict(p.get('media', {}), yaw_angles=[90], lod_index=0, lod_indices=indices or [0])
+        if diagnostic_targets is not None:
+            target = 'LOW' if variant == 'LOD' else 'MID'
+            lit_indices = ({0} if target in lit_targets else set()) if variant == 'LOD' else ({0} if 'MID' in lit_targets else set())
+            if variant == 'LOD':
+                if 'LODS' in lit_targets:
+                    lit_indices.update(range(len(p['lod_screen_sizes'])))
+                if 'selected' in lit_targets:
+                    lit_indices.add(lod)
+            p['media']['frame_views'] = {
+                str(index): (['lit'] if index in lit_indices else []) +
+                (view_modes[1:] if index == 0 and target in diagnostics else [])
+                for index in indices
+            }
+            p['previews']['frame_views'] = (
+                (['lit'] if 'overview' in lit_targets else []) +
+                (view_modes[1:] if 'overview' in diagnostics else [])
+            )
         profiles[variant] = p
     steps = []
     for variant in profiles:

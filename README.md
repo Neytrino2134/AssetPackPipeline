@@ -1,4 +1,9 @@
-# Asset Pack Pipeline 0.29.0
+# Asset Pack Pipeline 0.30.0
+
+Custom UI remembers its position, size, mode, tab, wizard step, Quick Start choices
+and unsaved form edits between sessions; a Pin button keeps it above other windows.
+A MESHFLOW button on the Level Editor toolbar opens it. Quick Start chooses Wireframe
+and Player Collision images per target (overview, MID, LOW); see the 0.30.0 notes.
 
 Quick Start now generates fitted Auto Convex simple collisions instead of one box.
 Professional mode supports convex / box / none and configurable hull budgets.

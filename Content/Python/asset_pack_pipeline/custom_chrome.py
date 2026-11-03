@@ -6,8 +6,12 @@ from . import __version__
 TITLE='MESHFLOW Asset Pack Pipeline v'+__version__
 SUBTITLE='FBX / GLB   →   Static Mesh + LOD   →   Материалы   →   Проверка'
 HEIGHT=64
-PIN_FONT='Segoe MDL2 Assets'  # Windows 10/11 icon font; Pin / Pinned glyphs
-PIN_GLYPH,PINNED_GLYPH='',''
+PIN_BITMAP = """#define pin_width 16
+#define pin_height 16
+static unsigned char pin_bits[] = {
+    0x00, 0x00, 0x00, 0x0c, 0x00, 0x1e, 0x00, 0x3e, 0x00, 0x3f, 0x80, 0x1f, 0xc0, 0x0f, 0xe0, 0x0f, 0xf0, 0x1f, 0xf0, 0x1b, 0xe0, 0x01, 0x70, 0x00, 0x18, 0x00, 0x0c, 0x00, 0x06, 0x00, 0x00, 0x00
+};
+"""
 PIN_ACTIVE='#3975da'
 
 class WindowChrome:
@@ -46,10 +50,14 @@ class WindowChrome:
         # Pin: keep the window above other apps (e.g. Unreal) while it renders.
         self.pinned=False
         self.bg=bg
-        self.pin_button=tk.Button(self.bar,text=PIN_GLYPH,command=self.toggle_pin,bg=bg,fg='#b8c5db',
+        self.pin_icon=tk.BitmapImage(master=root,data=PIN_BITMAP,foreground='#b8c5db')
+        self.pinned_icon=tk.BitmapImage(master=root,data=PIN_BITMAP,foreground='#ffffff')
+        slot=tk.Frame(self.bar,bg=bg,width=button.winfo_reqwidth(),height=button.winfo_reqheight()+4)
+        slot.pack(side='right',anchor='n')
+        self.pin_button=tk.Button(slot,image=self.pin_icon,command=self.toggle_pin,bg=bg,fg='#b8c5db',
                                   activebackground='#30394a',activeforeground='#ffffff',relief='flat',
-                                  borderwidth=0,highlightthickness=0,font=(PIN_FONT,12),width=4,takefocus=True)
-        self.pin_button.pack(side='right',anchor='n',ipady=6)
+                                  borderwidth=0,highlightthickness=0,takefocus=True)
+        self.pin_button.place(relwidth=1,relheight=1)
         self.pin_button.bind('<Enter>',lambda event:self.pin_button.configure(bg='#30394a' if not self.pinned else PIN_ACTIVE))
         self.pin_button.bind('<Leave>',lambda event:self._paint_pin())
         self.normal_geometry=None
@@ -98,7 +106,7 @@ class WindowChrome:
         self._paint_pin()
 
     def _paint_pin(self):
-        self.pin_button.configure(text=PINNED_GLYPH if self.pinned else PIN_GLYPH,
+        self.pin_button.configure(image=self.pinned_icon if self.pinned else self.pin_icon,
                                   bg=PIN_ACTIVE if self.pinned else self.bg,
                                   fg='#ffffff' if self.pinned else '#b8c5db')
 

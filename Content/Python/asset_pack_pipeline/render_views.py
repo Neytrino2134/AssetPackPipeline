@@ -15,10 +15,13 @@ def suffix(mode):
     if mode not in MODES:raise ValueError('Unknown render view mode')
     return '_'+MODES[mode][1]
 
-def expand(rows,modes):
+def expand(rows,modes,frame_views=None):
     result=[]
     for row in rows:
-        for mode in settings(modes):
+        selected = settings(modes) if frame_views is None else (
+            frame_views.get(str(row.get('lod_index')), []) if isinstance(frame_views, dict) else frame_views
+        )
+        for mode in selected:
             path=Path(row['output_path'])
             result.append(dict(row,render_view=mode,id=row['id']+suffix(mode),
                 output_path=str(path.with_name(path.stem+suffix(mode)+path.suffix))))

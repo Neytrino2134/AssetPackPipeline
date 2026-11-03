@@ -91,7 +91,9 @@ def advance(report, state):
             raise RuntimeError('Preview warmup timed out')
         if now < state['warm_until']:
             return False
-        overview._safe_to_switch()
+        # This captures the current world without switching or saving maps.
+        from . import runtime
+        runtime.assert_editor_idle()
         if overview._current()[1] != item['map_path']:
             raise RuntimeError('Active map changed during preview export')
         actors = overview._actors(report['manifest']['profile'])

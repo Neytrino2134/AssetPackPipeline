@@ -606,7 +606,7 @@ def start_previews(profile_path):
              'map_path': overview.settings(manifest['profile'], lod)['map_path'],
              'output_path': str(folder / (('lod_review' if lod else 'overview')+'.png'))} for lod in modes]
     from . import render_views
-    rows=render_views.expand(rows,config['view_modes'])
+    rows=render_views.expand(rows,config['view_modes'],config.get('frame_views'))
     report = {'schema_version': 1, 'run_id': run_id, 'kind': 'preview_export', 'status': 'running',
               'plugin_version': __version__, 'engine_version': readiness()['engine_version'],
               'manifest': manifest, 'preview_settings': config, 'assets': rows,

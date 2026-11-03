@@ -14,6 +14,8 @@ def settings(profile):
         if not math.isfinite(number) or not low <= number <= high:
             raise ValueError('Invalid media '+key)
         result[key] = number
+    # Brighten both render studios relative to the profile exposure.
+    result['exposure_bias'] += 1.8
     return result
 
 

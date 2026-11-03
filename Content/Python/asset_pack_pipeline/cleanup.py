@@ -14,11 +14,21 @@ def dependency_options():
         include_soft_management_references=True, include_hard_management_references=True)
 
 
+def dirty_user_maps(u):
+    saving = u.EditorLoadingAndSavingUtils
+    dirty = list(saving.get_dirty_map_packages())
+    studios = [package for package in dirty if re.fullmatch(
+        r'/Game/AssetPackPipeline_Previews/[0-9a-f]{32}/Studio', package.get_name())]
+    if studios:
+        saving.save_packages(studios, True)
+    return list(saving.get_dirty_map_packages())
+
+
 def assert_clean():
     import unreal as u
     from . import runtime
     runtime.assert_editor_idle()
-    dirty = list(u.EditorLoadingAndSavingUtils.get_dirty_map_packages()) + list(u.EditorLoadingAndSavingUtils.get_dirty_content_packages())
+    dirty = dirty_user_maps(u) + list(u.EditorLoadingAndSavingUtils.get_dirty_content_packages())
     if dirty:
         raise RuntimeError('Save or revert all dirty maps/assets before cleanup or delivery: '+', '.join(p.get_name() for p in dirty))
 

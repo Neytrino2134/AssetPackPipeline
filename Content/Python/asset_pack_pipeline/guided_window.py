@@ -30,7 +30,7 @@ class GuidedWindow(AssistantWindow, FinalWindow):
         self.guide_finalize = tk.BooleanVar(value=True)
         self.guide_renders = {name: tk.BooleanVar(value=name == 'overview')
                               for name in ('overview', 'MID', 'LOW', 'LODS', 'selected')}
-        self.guide_view_modes={name:tk.BooleanVar(value=False) for name in ('wireframe','collision_visibility','collision_pawn')}
+        self.guide_view_modes={name:tk.BooleanVar(value=False) for name in ('wireframe','collision_pawn','overview','MID','LOW')}
         # Quick start: 1 and 2 stacked left, 3 on the right, 4 full width below.
         self.guide_grid = t.Frame(body)
         self.guide_grid.pack(fill='x')
@@ -56,8 +56,8 @@ class GuidedWindow(AssistantWindow, FinalWindow):
         mode_choices=t.Frame(columns);mode_choices.grid(row=0,column=1,sticky='nw')
         t.Label(image_choices,text='Изображения').pack(anchor='w',pady=(0,6))
         t.Label(mode_choices,text='Варианты').pack(anchor='w',pady=(0,6))
-        t.Label(mode_choices,text='С освещением — всегда',style='Muted.TLabel').pack(anchor='w',pady=3)
-        for name,label in (('wireframe','Каркасное'),('collision_visibility','Коллизия объекта'),('collision_pawn','Коллизия игрока')):
+        t.Label(mode_choices,text='Дополнительные кадры',style='Muted.TLabel').pack(anchor='w',pady=3)
+        for name,label in (('wireframe','Каркасное'),('collision_pawn','Коллизия игрока'),('overview','Один общий кадр'),('MID','Каждый MID'),('LOW','Каждый LOW (LOD0)')):
             t.Checkbutton(mode_choices,text=label,variable=self.guide_view_modes[name]).pack(anchor='w',pady=3)
         for key, label in (('overview', 'Один общий кадр'), ('MID', 'Каждый MID'), ('LOW', 'Каждый LOW (LOD0)'),
                            ('LODS', 'Каждый LOD'), ('selected', 'Один выбранный LOD у каждой модели')):
@@ -70,7 +70,7 @@ class GuidedWindow(AssistantWindow, FinalWindow):
         self.build_final_options(self.delivery_tab)
         self.guide_summary = tk.Text(review, height=4, bg='#14171d', fg='#bbc7dd', relief='flat', wrap='word',
                                      padx=12, pady=12, state='disabled')
-        self.guide_summary.pack(fill='both', expand=True)
+        # The plan is only shown on the final wizard step.
         self.guide_nav = t.Frame(self.controls_frame)
         t.Button(self.guide_nav, text='Назад', command=lambda: self.guide_move(-1)).pack(side='left')
         t.Button(self.guide_nav, text='Далее', command=lambda: self.guide_move(1)).pack(side='right')
@@ -121,6 +121,7 @@ class GuidedWindow(AssistantWindow, FinalWindow):
             self.guide_nav.pack(fill='x',pady=(0,10),before=self.guide_actions)
         else:
             self.guide_nav.pack_forget()
+        self.guide_summary.pack_forget()
         if wizard and self.guide_step == 3:
             try:
                 profiles, steps = self.guide_plan()
@@ -134,6 +135,7 @@ class GuidedWindow(AssistantWindow, FinalWindow):
             self.guide_summary.delete('1.0', 'end')
             self.guide_summary.insert('end', content)
             self.guide_summary.configure(state='disabled')
+            self.guide_summary.pack(fill='both', expand=True)
         if wizard:
             self.ai_frame.pack(fill='both', expand=True, pady=(8, 0))
 
@@ -143,7 +145,8 @@ class GuidedWindow(AssistantWindow, FinalWindow):
                               self.variables['source_format'].get(), variants[self.guide_variants.get()],
                               [k for k, v in self.guide_renders.items() if v.get()], int(self.guide_lod.get()),
                               self.guide_finalize.get(), self.variables['delivery_output_directory'].get().strip(),
-                              view_modes=[name for name,value in self.guide_view_modes.items() if value.get()])
+                              view_modes=[name for name,value in self.guide_view_modes.items() if value.get() and name in ('wireframe','collision_pawn')],
+                              diagnostic_targets=[name for name in ('overview','MID','LOW') if self.guide_view_modes[name].get()])
 
     def guide_run(self, start, raise_errors=False):
         try:

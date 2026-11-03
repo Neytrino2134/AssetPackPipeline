@@ -80,4 +80,18 @@ def register():
         entry.set_string_command(unreal.ToolMenuStringCommandType.PYTHON, '',
                                  f"from asset_pack_pipeline import ui; ui.invoke('{action}')")
         menu.add_menu_entry('Actions', entry)
+    toolbar = menus.extend_menu('LevelEditor.LevelEditorToolBar.PlayToolBar')
+    button = unreal.ToolMenuEntry(
+        name='AssetPackPipeline.Toolbar.CustomWindow',
+        owner=unreal.ToolMenuOwner(name=owner),
+        type=unreal.MultiBlockType.TOOL_BAR_BUTTON,
+    )
+    button.set_label('MESHFLOW')
+    button.set_tool_tip('Открыть MESHFLOW Asset Pack Pipeline')
+    button.set_icon('AssetPackPipelineStyle', 'AssetPackPipeline.ToolbarLogo')
+    button.set_string_command(
+        unreal.ToolMenuStringCommandType.PYTHON, '',
+        'from asset_pack_pipeline import ui; ui.open_custom_window()',
+    )
+    toolbar.add_menu_entry('AssetPackPipeline', button)
     menus.refresh_all_widgets()
